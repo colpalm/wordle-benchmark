@@ -1,0 +1,247 @@
+import pytest
+
+from wordle.enums import LetterStatus, GameStatus
+from wordle.wordle_game import WordleGame
+
+
+class TestEvaluateGuess:
+    """Test suite for _evaluate_guess method"""
+
+    def test_all_correct_letters(self):
+        """Test when all letters are in correct positions"""
+        game = WordleGame(target_word="CRANE")
+        result = game._evaluate_guess("CRANE")
+
+        expected = [
+            {"position": 0, "letter": "C", "status": LetterStatus.CORRECT.value},
+            {"position": 1, "letter": "R", "status": LetterStatus.CORRECT.value},
+            {"position": 2, "letter": "A", "status": LetterStatus.CORRECT.value},
+            {"position": 3, "letter": "N", "status": LetterStatus.CORRECT.value},
+            {"position": 4, "letter": "E", "status": LetterStatus.CORRECT.value},
+        ]
+        assert result == expected
+
+    def test_no_correct_letters(self):
+        """Test when no letters match"""
+        game = WordleGame(target_word="CRANE")
+        result = game._evaluate_guess("FOIST")
+
+        for letter_result in result:
+            assert letter_result["status"] == LetterStatus.ABSENT.value
+
+    def test_present_letters(self):
+        """Test letters in wrong positions (yellow)"""
+        game = WordleGame(target_word="CRANE")
+        result = game._evaluate_guess("EARNS")
+
+        # E is in position 0 but should be in position 4 (present)
+        assert result[0]["letter"] == "E"
+        assert result[0]["status"] == LetterStatus.PRESENT.value
+
+        # A is in position 1 but should be in position 2 (present)
+        assert result[1]["letter"] == "A"
+        assert result[1]["status"] == LetterStatus.PRESENT.value
+
+        # R is in position 2 but should be in position 1 (present)
+        assert result[2]["letter"] == "R"
+        assert result[2]["status"] == LetterStatus.PRESENT.value
+
+        # N is in correct position 3 (correct)
+        assert result[3]["letter"] == "N"
+        assert result[3]["status"] == LetterStatus.CORRECT.value
+
+        # S is not in the target word (absent)
+        assert result[4]["letter"] == "S"
+        assert result[4]["status"] == LetterStatus.ABSENT.value
+
+    def test_duplicate_letters_in_guess(self):
+        """Test handling of duplicate letters in guess"""
+        game = WordleGame(target_word="CRANE")
+        result = game._evaluate_guess("ERASE")
+
+        # First E (position 0) should be absent (Correct E in position 4 is handled first, then there should be no more E's)
+        assert result[0]["letter"] == "E"
+        assert result[0]["status"] == LetterStatus.ABSENT.value
+
+        # R (position 1) should be correct
+        assert result[1]["letter"] == "R"
+        assert result[1]["status"] == LetterStatus.CORRECT.value
+
+        # A (position 2) should be correct
+        assert result[2]["letter"] == "A"
+        assert result[2]["status"] == LetterStatus.CORRECT.value
+
+        # S (position 3) should be absent
+        assert result[3]["letter"] == "S"
+        assert result[3]["status"] == LetterStatus.ABSENT.value
+
+        # Second E (position 4) should be correct
+        assert result[4]["letter"] == "E"
+        assert result[4]["status"] == LetterStatus.CORRECT.value
+
+    def test_duplicate_letters_in_target(self):
+        """Test handling when the target word has duplicate letters"""
+        game = WordleGame(target_word="SPEED")
+        result = game._evaluate_guess("SUEDE")
+
+        # S in position 0 should be correct
+        assert result[0]["letter"] == "S"
+        assert result[0]["status"] == LetterStatus.CORRECT.value
+
+        # U in position 1 should be absent
+        assert result[1]["letter"] == "U"
+        assert result[1]["status"] == LetterStatus.ABSENT.value
+
+        # First E in position 2 should be correct
+        assert result[2]["letter"] == "E"
+        assert result[2]["status"] == LetterStatus.CORRECT.value
+
+        # D in position 3 should be present (wrong position)
+        assert result[3]["letter"] == "D"
+        assert result[3]["status"] == LetterStatus.PRESENT.value
+
+        # E in position 4 should be present (wrong position)
+        assert result[4]["letter"] == "E"
+        assert result[4]["status"] == LetterStatus.PRESENT.value
+
+
+class TestMakeGuess:
+    """Test suite for make_guess method"""
+
+    def test_valid_guess(self):
+        """Test making a valid guess"""
+        game = WordleGame(target_word="CRANE")
+        result = game.make_guess("STARE")
+
+        assert result["guess"] == "STARE"
+        assert len(result["result"]) == 5
+        assert result["status"] == GameStatus.IN_PROGRESS.value
+        assert result["guesses_remaining"] == 5
+        assert result["target_word"] is None  # Hidden during the game
+
+    def test_winning_guess(self):
+        """Test making the correct guess"""
+        game = WordleGame(target_word="CRANE")
+        result = game.make_guess("CRANE")
+
+        assert result["guess"] == "CRANE"
+        assert result["status"] == GameStatus.WON.value
+        assert result["target_word"] == "CRANE"  # Revealed after winning
+
+    def test_losing_game(self):
+        """Test losing the game after 6 incorrect guesses"""
+        game = WordleGame(target_word="CRANE")
+
+        # Make 5 incorrect guesses
+        for _ in range(5):
+            result = game.make_guess("STARE")
+            assert result["status"] == GameStatus.IN_PROGRESS.value
+            assert result["target_word"] is None
+
+        # Make the 6th incorrect guess
+        result = game.make_guess("STARE")
+        assert result["status"] == GameStatus.LOST.value
+        assert result["target_word"] == "CRANE"  # Revealed after losing
+        assert game.status == GameStatus.LOST
+
+    def test_guess_too_short(self):
+        """Test error handling for short guess"""
+        game = WordleGame(target_word="CRANE")
+
+        with pytest.raises(ValueError, match="Guess must be 5 letters long"):
+            game.make_guess("CAR")
+
+    def test_guess_too_long(self):
+        """Test error handling for long guess"""
+        game = WordleGame(target_word="CRANE")
+
+        with pytest.raises(ValueError, match="Guess must be 5 letters long"):
+            game.make_guess("CRANES")
+
+    def test_non_alphabetic_guess(self):
+        """Test error handling for non-alphabetic guess"""
+        game = WordleGame(target_word="CRANE")
+
+        with pytest.raises(ValueError, match="Guess must be a valid alphabetical word"):
+            game.make_guess("CR4NE")
+
+    def test_guess_after_game_over(self):
+        """Test error when trying to guess after the game is over"""
+        game = WordleGame(target_word="CRANE")
+        game.make_guess("CRANE")  # Win the game
+
+        with pytest.raises(ValueError, match="Game is not in progress"):
+            game.make_guess("STARE")
+
+    def test_guess_whitespace_handling(self):
+        """Test that whitespace is stripped from guesses"""
+        game = WordleGame(target_word="CRANE")
+        result = game.make_guess(" STARE ")
+
+        assert result["guess"] == "STARE"
+
+    def test_case_insensitive_guess_input(self):
+        """Test that lowercase guesses are accepted"""
+        game = WordleGame(target_word="CRANE")
+        result = game.make_guess("stare")
+
+        assert result["guess"] == "STARE"
+
+class TestGameState:
+    """Test suite for the get_game_state method"""
+
+    def test_initial_game_state(self):
+        """Test game state at initialization"""
+        game = WordleGame(target_word="CRANE")
+        state = game.get_game_state()
+
+        assert state["status"] == GameStatus.IN_PROGRESS.value
+        assert state["guesses"] == []
+        assert state["guess_results"] == []
+        assert state["guesses_made"] == 0
+        assert state["guesses_remaining"] == 6
+        assert state["target_word"] is None  # Hidden during the game
+        assert state["won"] is False
+        assert state["game_over"] is False
+
+    def test_game_state_after_guess(self):
+        """Test game state after making a guess"""
+        game = WordleGame(target_word="CRANE")
+        game.make_guess("STARE")
+        state = game.get_game_state()
+
+        assert state["status"] == GameStatus.IN_PROGRESS.value
+        assert state["guesses"] == ["STARE"]
+        assert len(state["guess_results"]) == 1
+        assert state["guesses_made"] == 1
+        assert state["guesses_remaining"] == 5
+        assert state["won"] is False
+        assert state["game_over"] is False
+
+    def test_game_state_when_won(self):
+        """Test game state when the game is won"""
+        game = WordleGame(target_word="CRANE")
+        game.make_guess("CRANE")
+        state = game.get_game_state()
+
+        assert state["status"] == GameStatus.WON.value
+        assert state["target_word"] == "CRANE"  # Revealed when won
+        assert state["won"] is True
+        assert state["game_over"] is True
+
+    def test_game_state_when_lost(self):
+        """Test game state when the game is lost"""
+        game = WordleGame(target_word="CRANE")
+
+        # Make 6 incorrect guesses
+        for _ in range(6):
+            game.make_guess("STARE")
+
+        state = game.get_game_state()
+        assert state["status"] == GameStatus.LOST.value
+        assert state["guesses"] == ["STARE"] * 6
+        assert state["guesses_made"] == 6
+        assert state["guesses_remaining"] == 0
+        assert state["target_word"] == "CRANE"  # Revealed when lost
+        assert state["won"] is False
+        assert state["game_over"] is True
