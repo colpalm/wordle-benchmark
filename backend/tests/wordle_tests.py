@@ -245,3 +245,91 @@ class TestGameState:
         assert state["target_word"] == "CRANE"  # Revealed when lost
         assert state["won"] is False
         assert state["game_over"] is True
+
+class TestAPIFetch:
+    """Test suite for the _fetch_wordle_data method"""
+
+    # TODO: add test for word of the day retrieval
+    def test_word_of_the_day_retrieved(self):
+        pass
+
+class TestWordleGameIntegration:
+    """Integration test suite for full WordleGame scenarios"""
+
+    @pytest.mark.integration
+    def test_complete_winning_game(self):
+        """Test a complete winning game"""
+        game = WordleGame(target_word="CRANE")
+
+        # First guess - some letters present
+        result1 = game.make_guess("STARE")
+        assert result1["status"] == GameStatus.IN_PROGRESS.value
+        assert len(game.guesses) == 1
+        assert result1["guesses_remaining"] == 5
+
+        # Second guess - closer
+        result2 = game.make_guess("CRANK")
+        assert result2["status"] == GameStatus.IN_PROGRESS.value
+        assert len(game.guesses) == 2
+        assert result1["guesses_remaining"] == 5
+
+        # Third guess - correct!
+        result3 = game.make_guess("CRANE")
+        assert result3["status"] == GameStatus.WON.value
+        assert len(game.guesses) == 3
+
+        # Verify the final game state
+        final_state = game.get_game_state()
+        assert final_state["won"] is True
+        assert final_state["game_over"] is True
+        assert final_state["guesses_made"] == 3
+        assert final_state["guesses"] == ["STARE", "CRANK", "CRANE"]
+
+    @pytest.mark.integration
+    def test_complete_losing_game(self):
+        """Test a complete game that ends in a loss"""
+        game = WordleGame(target_word="CRANE")
+
+        # Make 6 incorrect guesses
+        wrong_guesses = ["STARE", "LIGHT", "MOUND", "FIFTY", "BUMPS", "GHOST"]
+
+        for i, guess in enumerate(wrong_guesses):
+            result = game.make_guess(guess)
+
+            if i < 5:  # First 5 guesses
+                assert result["status"] == GameStatus.IN_PROGRESS.value
+                assert result["guesses_remaining"] == 5 - i
+            else:  # Last guess
+                assert result["status"] == GameStatus.LOST.value
+                assert result["guesses_remaining"] == 0
+
+        # Verify the final game state
+        final_state = game.get_game_state()
+        assert final_state["won"] is False
+        assert final_state["game_over"] is True
+        assert final_state["guesses_made"] == 6
+        assert final_state["guesses_remaining"] == 0
+        assert final_state["guesses"] == wrong_guesses
+
+    @pytest.mark.integration
+    def test_game_progression_tracking(self):
+        """Test that game properly tracks progression through multiple guesses"""
+        game = WordleGame(target_word="WORLD")
+
+        guesses = ["STARE", "CLOUD", "WORLD"]
+
+        for i, guess in enumerate(guesses):
+            result = game.make_guess(guess)
+
+            # Check that all previous guesses are stored
+            assert len(game.guesses) == i + 1
+            assert len(game.guess_results) == i + 1
+            assert game.guesses[i] == guess
+
+            # Check remaining guesses
+            expected_remaining = 6 - (i + 1)
+            if result["status"] == GameStatus.IN_PROGRESS.value:
+                assert result["guesses_remaining"] == expected_remaining
+
+        # Should have won on the third guess
+        assert game.status == GameStatus.WON
