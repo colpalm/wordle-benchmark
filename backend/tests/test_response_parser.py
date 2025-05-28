@@ -48,6 +48,41 @@ class TestExtractQuotedWord:
         with pytest.raises(ValueError, match="No quoted 5-letter word found"):
             ResponseParser._extract_quoted_word(response)
 
+
+class TestExtractCapitalizedWord:
+    """Test suite for _extract_all_capitalized_word method"""
+
+    def test_single_capitalized_word(self):
+        """Test extracting a single all-caps word"""
+        response = "I believe the answer is CRANE today."
+        result = ResponseParser._extract_all_capitalized_word(response)
+        assert result == "CRANE"
+
+    def test_mixed_case_ignored(self):
+        """Test that mixed case words are ignored"""
+        response = "I think Crane or WORLD could work."
+        result = ResponseParser._extract_all_capitalized_word(response)
+        assert result == "WORLD"
+
+    def test_capitalized_with_punctuation(self):
+        """Test all-caps word with punctuation boundaries"""
+        response = "The answer is WORLD! I'm sure."
+        result = ResponseParser._extract_all_capitalized_word(response)
+        assert result == "WORLD"
+
+    def test_no_capitalized_word(self):
+        """Test when no all-caps 5-letter word exists"""
+        response = "I think it's crane or World in lowercase."
+        with pytest.raises(ValueError, match="No capitalized 5-letter word found"):
+            ResponseParser._extract_all_capitalized_word(response)
+
+    def test_capitalized_wrong_length(self):
+        """Test when all-caps words are not 5 letters"""
+        response = "Maybe CAR or HOUSES in all caps."
+        with pytest.raises(ValueError, match="No capitalized 5-letter word found"):
+            ResponseParser._extract_all_capitalized_word(response)
+
+
 class TestExtractStandaloneWord:
     """Test suite for _extract_standalone_word method"""
 
