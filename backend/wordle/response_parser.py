@@ -3,6 +3,8 @@ import re
 class ResponseParser:
     """Parse LLM responses to extract Wordle guesses"""
 
+    _PAT_QUOTED_WORD = re.compile(r'["\']([A-Za-z]{5})["\']')
+
     @staticmethod
     def extract_guess_multimethod(response: str) -> str:
         """
@@ -19,11 +21,10 @@ class ResponseParser:
         """
         response = response.strip()
         extraction_methods = [
-            ResponseParser._extract_standalone_word,
             ResponseParser._extract_quoted_word,
-            ResponseParser._extract_capitalized_word,
-            ResponseParser._extract_last_word,
-            ResponseParser._extract_any_five_letters
+            ResponseParser._extract_standalone_word,
+            ResponseParser._extract_all_capitalized_word,
+            ResponseParser._extract_last_word
         ]
 
         for method in extraction_methods:
@@ -38,6 +39,14 @@ class ResponseParser:
         raise ValueError(f"All extraction methods failed for response: '{response}'")
 
     @staticmethod
+    def _extract_quoted_word(response: str) -> str:
+        """Extract word from quotes"""
+        matches = ResponseParser._PAT_QUOTED_WORD.findall(response)
+        if matches:
+            return matches[0]
+        raise ValueError("No quoted 5-letter word found")
+
+    @staticmethod
     def _extract_standalone_word(response: str) -> str:
         """Extract a standalone 5-letter word"""
         pattern = r'\b[A-Za-z]{5}\b'
@@ -45,6 +54,20 @@ class ResponseParser:
         if matches:
             return matches[0]
         raise ValueError("No standalone 5-letter word found")
+
+    @staticmethod
+    def _extract_all_capitalized_word(response: str) -> str:
+        """Extract all-caps word"""
+        pattern = r'\b[A-Z]{5}\b'
+        matches = re.findall(pattern, response)
+        if matches:
+            return matches[0]
+        raise ValueError("No capitalized 5-letter word found")
+
+    @staticmethod
+    def _extract_last_word(response: str) -> str:
+        pass
+
 
     @staticmethod
     def validate_guess_format(guess: str) -> bool:
