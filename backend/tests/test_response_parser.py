@@ -120,7 +120,19 @@ class TestExtractGuessMultimethod:
     """Test suite for extract_guess_multimethod - the main extraction method"""
 
     def test_quoted_word(self):
-        """Test quoted word method"""
-        response = 'I think "CRANE" is a good guess'
+        """Test quoted word - ignores other 5-letter words (think, guess)"""
+        response = 'I think "crane" is a good guess'
         result = ResponseParser.extract_guess_multimethod(response)
-        assert result == "CRANE" # bypasses 5 letter 'think' and gets 'CRANE'
+        assert result == "CRANE"
+
+    def test_all_capitalized_word(self):
+        """Test all-caps word - ignores other 5-letter words (think, guess)"""
+        response = "I think CRANE is a good guess"
+        result = ResponseParser.extract_guess_multimethod(response)
+        assert result == "CRANE"
+
+    def test_last_word(self):
+        """Test last word - ignores other 5-letter words (think, guess) and all caps (MY, IS)"""
+        response = "MY final guess IS crane"
+        result = ResponseParser.extract_guess_multimethod(response)
+        assert result == "CRANE"
