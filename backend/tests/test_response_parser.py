@@ -82,6 +82,39 @@ class TestExtractCapitalizedWord:
         with pytest.raises(ValueError, match="No capitalized 5-letter word found"):
             ResponseParser._extract_all_capitalized_word(response)
 
+class TestExtractLastWord:
+    """Test suite for _extract_last_word method"""
+
+    def test_last_word_five_letters(self):
+        """Test when the last word is exactly 5 letters"""
+        response = "My final guess is crane"
+        result = ResponseParser._extract_last_word(response)
+        assert result == "crane"
+
+    def test_last_word_mixed_case(self):
+        """Test last word with a mixed case"""
+        response = "I'll go with World"
+        result = ResponseParser._extract_last_word(response)
+        assert result == "World"
+
+    def test_last_word_with_punctuation(self):
+        """Test last word followed by punctuation"""
+        response = "The answer is WORLD."
+        result = ResponseParser._extract_last_word(response)
+        assert result == "WORLD"
+
+    def test_single_word_response(self):
+        """Test response with only one word"""
+        response = "CRANE"
+        result = ResponseParser._extract_last_word(response)
+        assert result == "CRANE"
+
+    def test_no_words(self):
+        """Test response with no alphabetic words"""
+        response = "123 456 789!"
+        with pytest.raises(ValueError, match="Last word is not 5 letters"):
+            ResponseParser._extract_last_word(response)
+
 
 class TestExtractStandaloneWord:
     """Test suite for _extract_standalone_word method"""

@@ -5,6 +5,7 @@ class ResponseParser:
 
     _PAT_QUOTED_WORD = re.compile(r'["\']([A-Za-z]{5})["\']')
     _PAT_ALL_CAPS = re.compile(r'\b[A-Z]{5}\b')
+    _PAT_5_LETTER_WORDS = re.compile(r'\b[A-Za-z]{5}\b')
 
     @staticmethod
     def extract_guess_multimethod(response: str) -> str:
@@ -66,7 +67,11 @@ class ResponseParser:
 
     @staticmethod
     def _extract_last_word(response: str) -> str:
-        pass
+        """Extract the last word if it's 5 letters"""
+        words = re.findall(ResponseParser._PAT_5_LETTER_WORDS, response)
+        if words:
+            return words[-1]
+        raise ValueError("Last word is not 5 letters")
 
 
     @staticmethod
