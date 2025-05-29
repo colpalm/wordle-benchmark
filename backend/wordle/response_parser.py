@@ -25,7 +25,6 @@ class ResponseParser:
         extraction_methods = [
             ResponseParser._extract_quoted_word,
             ResponseParser._extract_all_capitalized_word,
-            ResponseParser._extract_standalone_word,
             ResponseParser._extract_last_word
         ]
 
@@ -47,15 +46,6 @@ class ResponseParser:
         if matches:
             return matches[0]
         raise ValueError("No quoted 5-letter word found")
-
-    @staticmethod
-    def _extract_standalone_word(response: str) -> str:
-        """Extract a standalone 5-letter word"""
-        pattern = r'\b[A-Za-z]{5}\b'
-        matches = re.findall(pattern, response)
-        if matches:
-            return matches[0]
-        raise ValueError("No standalone 5-letter word found")
 
     @staticmethod
     def _extract_all_capitalized_word(response: str) -> str:
