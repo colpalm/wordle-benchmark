@@ -11,6 +11,8 @@ class WordleGame:
     Core Wordle Game Logic with NYT API integration
     """
 
+    WORD_LENGTH = 5
+    MAX_GUESSES = 6
     NYT_API_URL = "https://www.nytimes.com/svc/wordle/v2"
 
     def __init__(self, target_word: Optional[str] = None, date: Optional[str] = None):
@@ -22,8 +24,6 @@ class WordleGame:
             date (str): Date in YYYY-MM-DD format. If None, uses today's date
         """
 
-        self.max_guesses = 6
-        self.word_length = 5
         self.guesses: list[str] = []
         self.guess_results: list[list[dict]] = []
         self.status = GameStatus.IN_PROGRESS
@@ -70,7 +70,7 @@ class WordleGame:
             target_letter_counts[letter] = target_letter_counts.get(letter, 0) + 1
 
         # First Pass: Mark correct positions
-        temp_result = [None] * self.word_length
+        temp_result = [None] * self.WORD_LENGTH
 
         for i, letter in enumerate(guess):
             if letter == self.target_word[i]:
@@ -118,10 +118,9 @@ class WordleGame:
         guess = guess.upper().strip()
 
         # Validate guess format
-        if len(guess) != self.word_length:
-            raise ValueError(f"Guess must be {self.word_length} letters long")
-        if not guess.isalpha():
-            raise ValueError("Guess must be a valid alphabetical word")
+        is_valid, error_msg = self.validate_guess_format(guess)
+        if not is_valid:
+            raise ValueError(error_msg)
 
         # TODO: Add valid word validation when we have the word list
         # if guess not in self.valid_words:
@@ -134,14 +133,14 @@ class WordleGame:
         # Check game status
         if guess == self.target_word:
             self.status = GameStatus.WON
-        elif len(self.guesses) == self.max_guesses:
+        elif len(self.guesses) == self.MAX_GUESSES:
             self.status = GameStatus.LOST
 
         return {
             "guess": guess,
             "result": guess_result,
             "status": self.status.value,
-            "guesses_remaining": self.max_guesses - len(self.guesses),
+            "guesses_remaining": self.MAX_GUESSES - len(self.guesses),
             "target_word": self.target_word if self.status != GameStatus.IN_PROGRESS else None # Hidden from LLM during gameplay
         }
 
@@ -152,11 +151,30 @@ class WordleGame:
             "guesses": self.guesses,
             "guess_results": self.guess_results,
             "guesses_made": len(self.guesses),
-            "guesses_remaining": self.max_guesses - len(self.guesses),
+            "guesses_remaining": self.MAX_GUESSES - len(self.guesses),
             "target_word": self.target_word if self.status != GameStatus.IN_PROGRESS else None, # Hidden from LLM during gameplay
             "won": self.status == GameStatus.WON,
             "game_over": self.status != GameStatus.IN_PROGRESS,
         }
+
+    @staticmethod
+    def validate_guess_format(input_guess: str) -> tuple[bool, str]:
+        """
+        Validate that a guess meets basic format requirements - str, length, and alphabetical characters only.
+
+        Args:
+            input_guess: The extracted guess to validate
+
+        Returns:
+            True and empty string if the guess is a valid format, False otherwise with a message explaining the error
+        """
+        if not isinstance(input_guess, str):
+            return False, "Guess must be a string"
+        if len(input_guess) != WordleGame.WORD_LENGTH:
+            return False, f"Guess must be a {WordleGame.WORD_LENGTH}-letter word"
+        if not input_guess.isalpha():
+            return False, "Guess must only contain alphabetical characters"
+        return True, ""
 
 
 # Example usage and testing

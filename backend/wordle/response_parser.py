@@ -1,4 +1,5 @@
 import re
+from wordle.wordle_game import WordleGame
 
 class ResponseParser:
     """Parse LLM responses to extract Wordle guesses"""
@@ -31,7 +32,8 @@ class ResponseParser:
         for method in extraction_methods:
             try:
                 guess = method(response)
-                if ResponseParser.validate_guess_format(guess):
+                is_valid, _ = WordleGame.validate_guess_format(guess)
+                if is_valid:
                     return guess.upper()
             except (ValueError, AttributeError):
                 continue
@@ -62,26 +64,3 @@ class ResponseParser:
         if words:
             return words[-1]
         raise ValueError("Last word is not 5 letters")
-
-
-    @staticmethod
-    def validate_guess_format(guess: str) -> bool:
-        """
-        Validate that a guess meets basic format requirements
-
-        Args:
-            guess: The extracted guess to validate
-
-        Returns:
-            True if the guess is a valid format, False otherwise
-        """
-        if not isinstance(guess, str):
-            return False
-        if len(guess) != 5:
-            return False
-        if not guess.isalpha():
-            return False
-
-        return True
-
-

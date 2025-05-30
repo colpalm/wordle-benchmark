@@ -144,19 +144,19 @@ class TestMakeGuess:
     def test_guess_too_short(self, sample_game: WordleGame):
         """Test error handling for short guess"""
 
-        with pytest.raises(ValueError, match="Guess must be 5 letters long"):
+        with pytest.raises(ValueError, match=f"Guess must be a {WordleGame.WORD_LENGTH}-letter word"):
             sample_game.make_guess("CAR")
 
     def test_guess_too_long(self, sample_game: WordleGame):
         """Test error handling for long guess"""
 
-        with pytest.raises(ValueError, match="Guess must be 5 letters long"):
+        with pytest.raises(ValueError, match=f"Guess must be a {WordleGame.WORD_LENGTH}-letter word"):
             sample_game.make_guess("CRANES")
 
     def test_non_alphabetic_guess(self, sample_game: WordleGame):
         """Test error handling for non-alphabetic guess"""
 
-        with pytest.raises(ValueError, match="Guess must be a valid alphabetical word"):
+        with pytest.raises(ValueError, match="Guess must only contain alphabetical characters"):
             sample_game.make_guess("CR4NE")
 
     def test_guess_after_game_over(self, sample_game: WordleGame):
@@ -177,6 +177,26 @@ class TestMakeGuess:
         result = sample_game.make_guess("stare")
 
         assert result["guess"] == "STARE"
+
+class TestValidateGuess:
+    """Test suite for validate_guess_format method"""
+    # Incorrect Length and invalid characters tested above in TestMakeGuess
+
+    def test_valid_five_letter_word(self):
+        """Test validation of a valid 5-letter word"""
+        is_valid, error_msg = WordleGame.validate_guess_format("CRANE")
+        assert is_valid is True
+        assert error_msg == ""
+
+        is_valid, error_msg = WordleGame.validate_guess_format("world")
+        assert is_valid is True
+        assert error_msg == ""
+
+    def test_empty_string(self):
+        """Test validation fails for an empty string"""
+        is_valid, error_msg = WordleGame.validate_guess_format("")
+        assert is_valid is False
+        assert "5-letter word" in error_msg
 
 class TestGameState:
     """Test suite for the get_game_state method"""

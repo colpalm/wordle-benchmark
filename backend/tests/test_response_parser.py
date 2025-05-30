@@ -116,29 +116,6 @@ class TestExtractLastWord:
             ResponseParser._extract_last_word(response)
 
 
-class TestResponseParserValidation:
-    """Test suite for the validation method (validate_guess_format)"""
-
-    def test_valid_five_letter_word(self):
-        """Test validation of a valid 5-letter word"""
-        assert ResponseParser.validate_guess_format("CRANE") is True
-        assert ResponseParser.validate_guess_format("world") is True
-
-    def test_invalid_length(self):
-        """Test validation fails for the wrong length"""
-        assert ResponseParser.validate_guess_format("CAR") is False
-        assert ResponseParser.validate_guess_format("HOUSES") is False
-
-    def test_invalid_characters(self):
-        """Test validation fails for non-alphabetic characters"""
-        assert ResponseParser.validate_guess_format("CR4NE") is False
-        assert ResponseParser.validate_guess_format("12345") is False
-
-    def test_empty_string(self):
-        """Test validation fails for an empty string"""
-        assert ResponseParser.validate_guess_format("") is False
-
-
 class TestExtractGuessMultimethod:
     """Test suite for extract_guess_multimethod - the main extraction method"""
 
