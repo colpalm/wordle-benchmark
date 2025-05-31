@@ -18,6 +18,26 @@ class WordleGame:
     VALID_WORDS_FILE = "wordle-valid-words.txt"
     RESOURCES_DIR = Path(__file__).parent / "resources"
 
+    _valid_words: Optional[set[str]] = None
+
+    @classmethod
+    def _get_valid_words(cls) -> set[str]:
+        """Loads valid words if not already loaded, then returns them."""
+        if cls._valid_words is None:
+            print("Loading valid words for the first time...")
+            cls._valid_words = cls._load_valid_words_from_file(cls.RESOURCES_DIR / cls.VALID_WORDS_FILE)
+        return cls._valid_words
+
+    @property
+    def valid_words(self) -> set[str]:
+        """
+        Property to access class-level valid words
+
+        Note: Returns a reference to the shared set - mutations affect all instances.
+        Use self.valid_words.add() to modify.
+        """
+        return WordleGame._get_valid_words()
+
     def __init__(self, target_word: Optional[str] = None, date: Optional[str] = None):
         """
         Initialize Wordle game.
@@ -30,7 +50,6 @@ class WordleGame:
         self.guesses: list[str] = []
         self.guess_results: list[list[dict]] = []
         self.status = GameStatus.IN_PROGRESS
-        self.valid_words = self._load_valid_words(WordleGame.RESOURCES_DIR / WordleGame.VALID_WORDS_FILE)
 
         if target_word:
             self.target_word = target_word.upper()
@@ -41,7 +60,7 @@ class WordleGame:
         self._ensure_target_is_valid()
 
     @staticmethod
-    def _load_valid_words(word_list_path: Path) -> set[str]:
+    def _load_valid_words_from_file(word_list_path: Path) -> set[str]:
         """
         Load valid words from a file
 

@@ -11,6 +11,14 @@ def sample_game():
     """Fixture providing a basic game instance"""
     return WordleGame(target_word="CRANE")
 
+@pytest.fixture(autouse=True)
+def reset_wordlegame_class_state():
+    """Reset the class-level state before each test"""
+    WordleGame._valid_words = None
+    yield
+    # Clean up after test too
+    WordleGame._valid_words = None
+
 class TestEvaluateGuess:
     """Test suite for _evaluate_guess method"""
 
@@ -264,17 +272,17 @@ class TestAPIFetch:
         pass
 
 class TestLoadValidWords:
-    """Test suite for the _load_valid_words method"""
+    """Test suite for the _load_valid_words_from_file method"""
 
     def test_valid_words_loaded(self):
         """Test that valid words are loaded"""
-        valid_words = WordleGame._load_valid_words(WordleGame.RESOURCES_DIR / WordleGame.VALID_WORDS_FILE)
+        valid_words = WordleGame._load_valid_words_from_file(WordleGame.RESOURCES_DIR / WordleGame.VALID_WORDS_FILE)
         assert len(valid_words) > 0
 
     def test_valid_words_file_not_found(self):
         """Test error handling for a missing valid words file"""
         with pytest.raises(FileNotFoundError, match="Word list file not found"):
-            WordleGame._load_valid_words(WordleGame.RESOURCES_DIR / "invalid-file.txt")
+            WordleGame._load_valid_words_from_file(WordleGame.RESOURCES_DIR / "invalid-file.txt")
 
     def test_valid_words_no_valid_words_found(self):
         """Test ValueError when the file contains no valid 5-letter words"""
@@ -288,7 +296,7 @@ class TestLoadValidWords:
             f.flush()  # Ensure data is written to the disk
 
             with pytest.raises(ValueError, match="No valid words found"):
-                WordleGame._load_valid_words(Path(f.name))
+                WordleGame._load_valid_words_from_file(Path(f.name))
 
     def test_valid_words_empty_file(self):
         """Test ValueError when a file is completely empty"""
@@ -296,7 +304,7 @@ class TestLoadValidWords:
             f.flush()  # Create an empty file
 
             with pytest.raises(ValueError, match="No valid words found"):
-                WordleGame._load_valid_words(Path(f.name))
+                WordleGame._load_valid_words_from_file(Path(f.name))
 
     def test_load_valid_words_with_invalid_entries(self):
         """Test loading words with some invalid entries that should be filtered out"""
@@ -310,7 +318,7 @@ class TestLoadValidWords:
             f.write("  STARE  \n")  # Valid with whitespace
             f.flush()
 
-            valid_words = WordleGame._load_valid_words(Path(f.name))
+            valid_words = WordleGame._load_valid_words_from_file(Path(f.name))
 
             assert len(valid_words) == 3
             assert "CRANE" in valid_words
@@ -327,9 +335,10 @@ class TestEnsureTargetIsValid:
     def test_target_word_is_in_valid_list(self, sample_game: WordleGame):
         assert sample_game.target_word in sample_game.valid_words
 
+    # TODO: Think about this test when using not valid word - don't want test cases persisted
     def test_target_word_not_in_valid_list(self):
         # Target not in the initial valid list
-        valid_words = WordleGame._load_valid_words(WordleGame.RESOURCES_DIR / WordleGame.VALID_WORDS_FILE)
+        valid_words = WordleGame._load_valid_words_from_file(WordleGame.RESOURCES_DIR / WordleGame.VALID_WORDS_FILE)
         original_valid_words_count = len(valid_words)
         t_word = "ELLOH"
         assert t_word not in valid_words
