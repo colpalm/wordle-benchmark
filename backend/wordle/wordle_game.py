@@ -37,6 +37,9 @@ class WordleGame:
         else:
             self.target_word = self._fetch_daily_word(date).upper()
 
+        # Since we're not using the official NYT valid word list, we need to ensure the target word is in our valid word list
+        self._ensure_target_is_valid()
+
     @staticmethod
     def _load_valid_words(word_list_path: Path) -> set[str]:
         """
@@ -72,6 +75,19 @@ class WordleGame:
             raise
         except Exception as e:
             raise RuntimeError(f"Error loading word list from '{word_list_path}': {e}")
+
+    def _ensure_target_is_valid(self) -> None:
+        """Ensure the target word is in our valid word list. Add it if not."""
+        if not self.valid_words:
+            return
+
+        if self.target_word not in self.valid_words:
+            print(f"Warning: Target word '{self.target_word}' not in valid words list. Adding it to ensure winnability.")
+            self.valid_words.add(self.target_word)
+            # TODO: Add fucntionality to log added words and make them available for future games
+            # self._log_added_word(self.target_word)
+        else:
+            print(f"Target word '{self.target_word}' is valid.")
 
     def _fetch_daily_word(self, date: Optional[str]) -> str:
         """Fetch today's Wordle solution from NYT API"""

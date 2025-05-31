@@ -320,6 +320,26 @@ class TestLoadValidWords:
             assert "HOUSES" not in valid_words
             assert "CR4NE" not in valid_words
 
+
+class TestEnsureTargetIsValid:
+    """Test suite for the _ensure_target_is_valid method"""
+
+    def test_target_word_is_in_valid_list(self, sample_game: WordleGame):
+        assert sample_game.target_word in sample_game.valid_words
+
+    def test_target_word_not_in_valid_list(self):
+        # Target not in the initial valid list
+        valid_words = WordleGame._load_valid_words(WordleGame.RESOURCES_DIR / WordleGame.VALID_WORDS_FILE)
+        original_valid_words_count = len(valid_words)
+        t_word = "ELLOH"
+        assert t_word not in valid_words
+
+        game = WordleGame(target_word=t_word)
+
+        # Verify the target word was added
+        assert game.target_word in game.valid_words
+        assert len(game.valid_words) == original_valid_words_count + 1
+
 class TestWordleGameIntegration:
     """Integration test suite for full WordleGame scenarios"""
 
