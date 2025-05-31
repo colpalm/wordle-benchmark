@@ -172,3 +172,8 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Script Files
+scripts/valid-word-list-generation/nyt*
+scripts/valid-word-list-generation/valid-word-differences.txt
+scripts/valid-word-list-generation/wl.txt
