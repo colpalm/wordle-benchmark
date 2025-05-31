@@ -1,4 +1,5 @@
 from datetime import datetime
+from pathlib import Path
 from typing import Optional
 
 import requests
@@ -14,6 +15,8 @@ class WordleGame:
     WORD_LENGTH = 5
     MAX_GUESSES = 6
     NYT_API_URL = "https://www.nytimes.com/svc/wordle/v2"
+    VALID_WORDS_FILE = "wordle-valid-words.txt"
+    RESOURCES_DIR = Path(__file__).parent / "resources"
 
     def __init__(self, target_word: Optional[str] = None, date: Optional[str] = None):
         """
@@ -27,13 +30,48 @@ class WordleGame:
         self.guesses: list[str] = []
         self.guess_results: list[list[dict]] = []
         self.status = GameStatus.IN_PROGRESS
-        self.valid_words: set() # TODO: Where to get this, NYT as well?
+        self.valid_words = self._load_valid_words(WordleGame.RESOURCES_DIR / WordleGame.VALID_WORDS_FILE)
 
         if target_word:
             self.target_word = target_word.upper()
         else:
             self.target_word = self._fetch_daily_word(date).upper()
 
+    @staticmethod
+    def _load_valid_words(word_list_path: Path) -> set[str]:
+        """
+        Load valid words from a file
+
+        Args:
+            word_list_path: Path to the word list file
+        Returns:
+            Set of valid 5-letter words
+        Raises:
+            FileNotFoundError: If the word list file doesn't exist
+            ValueError: If no valid words are found in the file
+            RuntimeError: If there's an error reading/parsing the file
+        """
+        valid_words = set()
+
+        try:
+            with open(word_list_path, "r", encoding='utf-8') as f:
+                for line in f:
+                    word = line.strip().upper()
+                    if len(word) == WordleGame.WORD_LENGTH and word.isalpha():
+                        valid_words.add(word)
+
+            if not valid_words:
+                raise ValueError(f"No valid words found in the {word_list_path}")
+
+            print(f"Loaded {len(valid_words)} valid words from {word_list_path}")
+            return valid_words
+
+        except FileNotFoundError:
+            raise FileNotFoundError(f"Word list file not found: {word_list_path.absolute()}")
+        except ValueError:
+            raise
+        except Exception as e:
+            raise RuntimeError(f"Error loading word list from '{word_list_path}': {e}")
 
     def _fetch_daily_word(self, date: Optional[str]) -> str:
         """Fetch today's Wordle solution from NYT API"""
@@ -122,9 +160,9 @@ class WordleGame:
         if not is_valid:
             raise ValueError(error_msg)
 
-        # TODO: Add valid word validation when we have the word list
-        # if guess not in self.valid_words:
-        #     raise ValueError("Guess must be a valid English word")
+        # Validate guess against valid words
+        if guess not in self.valid_words:
+            raise ValueError("Guess must be a valid English word")
 
         guess_result = self._evaluate_guess(guess)
         self.guesses.append(guess)

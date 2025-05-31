@@ -1,3 +1,6 @@
+import tempfile
+from pathlib import Path
+
 import pytest
 
 from wordle.enums import LetterStatus, GameStatus
@@ -260,6 +263,63 @@ class TestAPIFetch:
     def test_word_of_the_day_retrieved(self):
         pass
 
+class TestLoadValidWords:
+    """Test suite for the _load_valid_words method"""
+
+    def test_valid_words_loaded(self):
+        """Test that valid words are loaded"""
+        valid_words = WordleGame._load_valid_words(WordleGame.RESOURCES_DIR / WordleGame.VALID_WORDS_FILE)
+        assert len(valid_words) > 0
+
+    def test_valid_words_file_not_found(self):
+        """Test error handling for a missing valid words file"""
+        with pytest.raises(FileNotFoundError, match="Word list file not found"):
+            WordleGame._load_valid_words(WordleGame.RESOURCES_DIR / "invalid-file.txt")
+
+    def test_valid_words_no_valid_words_found(self):
+        """Test ValueError when the file contains no valid 5-letter words"""
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt') as f:  # delete=True by default
+            f.write("CAR\n")  # Too short
+            f.write("HOUSES\n")  # Too long
+            f.write("CR4NE\n")  # Contains number
+            f.write("123AB\n")  # Contains numbers
+            f.write("\n")  # Empty line
+            f.write("   \n")  # Whitespace only
+            f.flush()  # Ensure data is written to the disk
+
+            with pytest.raises(ValueError, match="No valid words found"):
+                WordleGame._load_valid_words(Path(f.name))
+
+    def test_valid_words_empty_file(self):
+        """Test ValueError when a file is completely empty"""
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt') as f:
+            f.flush()  # Create an empty file
+
+            with pytest.raises(ValueError, match="No valid words found"):
+                WordleGame._load_valid_words(Path(f.name))
+
+    def test_load_valid_words_with_invalid_entries(self):
+        """Test loading words with some invalid entries that should be filtered out"""
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt') as f:
+            f.write("CRANE\n")  # Valid
+            f.write("CAR\n")  # Too short
+            f.write("HOUSES\n")  # Too long
+            f.write("CR4NE\n")  # Contains number
+            f.write("WORLD\n")  # Valid
+            f.write("\n")  # Empty line
+            f.write("  STARE  \n")  # Valid with whitespace
+            f.flush()
+
+            valid_words = WordleGame._load_valid_words(Path(f.name))
+
+            assert len(valid_words) == 3
+            assert "CRANE" in valid_words
+            assert "WORLD" in valid_words
+            assert "STARE" in valid_words
+            assert "CAR" not in valid_words
+            assert "HOUSES" not in valid_words
+            assert "CR4NE" not in valid_words
+
 class TestWordleGameIntegration:
     """Integration test suite for full WordleGame scenarios"""
 
@@ -336,3 +396,11 @@ class TestWordleGameIntegration:
 
         # Should have won on the third guess
         assert game.status == GameStatus.WON
+
+    @pytest.mark.integration
+    def test_game_invalid_guess(self):
+        """Test that the game handles invalid guesses"""
+        game = WordleGame(target_word="WORLD")
+
+        with pytest.raises(ValueError, match="Guess must be a valid English word"):
+            game.make_guess("AAAAA")
