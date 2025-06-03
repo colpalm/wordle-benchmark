@@ -154,6 +154,49 @@ class TestWordListValidation:
 class TestWordListAddWord:
     """Test suite for adding words to WordList"""
 
+    def test_add_new_valid_word_success(self, word_list, nonexistent_log_file):
+        """Test adding a new valid word to the list"""
 
-class TestWordListIntegration:
-    """Integration tests for WordList functionality"""
+        # Verify word not initially present
+        assert not word_list.is_valid("TESTS")
+        # Verify the log file does not exist
+        assert not nonexistent_log_file.exists()
+        # Add the word
+        word_list.add_word("TESTS")
+        # Verify word is now valid
+        assert word_list.is_valid("TESTS")
+
+        # Verify the log file was created and contains the word
+        log_content = nonexistent_log_file.read_text()
+        assert "TESTS" in log_content
+
+    def test_add_word_case_normalization(self, word_list):
+        """Test that words are normalized to uppercase"""
+
+        word_list.add_word("tests")
+        assert word_list.is_valid("TESTS")
+        assert word_list.is_valid("tests")
+
+    def test_add_word_invalid_format(self, word_list):
+        """Test error handling for invalid word formats"""
+
+        with pytest.raises(ValueError, match="Invalid word format"):
+            word_list.add_word("TOO")  # Too short
+
+        with pytest.raises(ValueError, match="Invalid word format"):
+            word_list.add_word("TOOLONG")  # Too long
+
+        with pytest.raises(ValueError, match="Invalid word format"):
+            word_list.add_word("TES1S")  # Contains number
+
+    def test_add_duplicate_word_ignored(self, word_list):
+        """Test that adding a word that already exists is handled gracefully - does not add to the valid list or log it"""
+
+        original_size = len(word_list.words)
+
+        # Adding existing word should not change anything
+        word_list.add_word("CRANE")
+        assert len(word_list.words) == original_size
+
+        # Log file should not exist because CRANE was not added
+        assert not word_list.added_valid_words_path.exists()
