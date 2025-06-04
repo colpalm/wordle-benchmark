@@ -5,6 +5,7 @@ from typing import Optional
 import requests
 
 from wordle.enums import GameStatus, LetterStatus
+from wordle.word_list import WordList
 
 
 class WordleGame:
@@ -15,38 +16,18 @@ class WordleGame:
     WORD_LENGTH = 5
     MAX_GUESSES = 6
     NYT_API_URL = "https://www.nytimes.com/svc/wordle/v2"
-    VALID_WORDS_FILE = "wordle-valid-words.txt"
-    RESOURCES_DIR = Path(__file__).parent / "resources"
 
-    _valid_words: Optional[set[str]] = None
-
-    @classmethod
-    def _get_valid_words(cls) -> set[str]:
-        """Loads valid words if not already loaded, then returns them."""
-        if cls._valid_words is None:
-            print("Loading valid words for the first time...")
-            cls._valid_words = cls._load_valid_words_from_file(cls.RESOURCES_DIR / cls.VALID_WORDS_FILE)
-        return cls._valid_words
-
-    @property
-    def valid_words(self) -> set[str]:
-        """
-        Property to access class-level valid words
-
-        Note: Returns a reference to the shared set - mutations affect all instances.
-        Use self.valid_words.add() to modify.
-        """
-        return WordleGame._get_valid_words()
-
-    def __init__(self, target_word: Optional[str] = None, date: Optional[str] = None):
+    def __init__(self, word_list: WordList, target_word: Optional[str] = None, date: Optional[str] = None):
         """
         Initialize Wordle game.
 
         Args:
-            target_word (str): Specific word to use (mainly for testing). If None, fetches from NYT API
+            word_list (WordList): WordList instance to use for valid words
+            target_word (str): Specific word to use. If None, fetches from NYT API
             date (str): Date in YYYY-MM-DD format. If None, uses today's date
         """
 
+        self.word_list = word_list
         self.guesses: list[str] = []
         self.guess_results: list[list[dict]] = []
         self.status = GameStatus.IN_PROGRESS
@@ -59,52 +40,11 @@ class WordleGame:
         # Since we're not using the official NYT valid word list, we need to ensure the target word is in our valid word list
         self._ensure_target_is_valid()
 
-    @staticmethod
-    def _load_valid_words_from_file(word_list_path: Path) -> set[str]:
-        """
-        Load valid words from a file
-
-        Args:
-            word_list_path: Path to the word list file
-        Returns:
-            Set of valid 5-letter words
-        Raises:
-            FileNotFoundError: If the word list file doesn't exist
-            ValueError: If no valid words are found in the file
-            RuntimeError: If there's an error reading/parsing the file
-        """
-        valid_words = set()
-
-        try:
-            with open(word_list_path, "r", encoding='utf-8') as f:
-                for line in f:
-                    word = line.strip().upper()
-                    if len(word) == WordleGame.WORD_LENGTH and word.isalpha():
-                        valid_words.add(word)
-
-            if not valid_words:
-                raise ValueError(f"No valid words found in the {word_list_path}")
-
-            print(f"Loaded {len(valid_words)} valid words from {word_list_path}")
-            return valid_words
-
-        except FileNotFoundError:
-            raise FileNotFoundError(f"Word list file not found: {word_list_path.absolute()}")
-        except ValueError:
-            raise
-        except Exception as e:
-            raise RuntimeError(f"Error loading word list from '{word_list_path}': {e}")
-
     def _ensure_target_is_valid(self) -> None:
         """Ensure the target word is in our valid word list. Add it if not."""
-        if not self.valid_words:
-            return
-
-        if self.target_word not in self.valid_words:
+        if not self.word_list.is_valid(self.target_word):
             print(f"Warning: Target word '{self.target_word}' not in valid words list. Adding it to ensure winnability.")
-            self.valid_words.add(self.target_word)
-            # TODO: Add fucntionality to log added words and make them available for future games
-            # self._log_added_word(self.target_word)
+            self.word_list.add_word(self.target_word)
         else:
             print(f"Target word '{self.target_word}' is valid.")
 
@@ -196,7 +136,7 @@ class WordleGame:
             raise ValueError(error_msg)
 
         # Validate guess against valid words
-        if guess not in self.valid_words:
+        if not self.word_list.is_valid(guess):
             raise ValueError("Guess must be a valid English word")
 
         guess_result = self._evaluate_guess(guess)
@@ -218,7 +158,7 @@ class WordleGame:
         }
 
     def get_game_state(self) -> dict:
-        """Get current game state"""
+        """Get the current game state"""
         return {
             "status": self.status.value,
             "guesses": self.guesses,
@@ -252,9 +192,18 @@ class WordleGame:
 
 # Example usage and testing
 if __name__ == "__main__":
+    from pathlib import Path
+
+    # Setup WordList
+    resource_dir = Path(__file__).parent / "resources"
+    valid_words = WordList(
+        base_valid_words_path=resource_dir / "wordle-valid-words.txt",
+        added_valid_words_path=resource_dir / "added_valid_words.log",
+    )
+
     # Test with a known word
     print("=== Testing with known word 'CRANE' ===")
-    game = WordleGame(target_word="CRANE")
+    game = WordleGame(word_list=valid_words, target_word="CRANE")
 
     test_guesses = ["STARE", "CRANE"]
 

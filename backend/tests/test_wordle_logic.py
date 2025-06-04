@@ -4,20 +4,13 @@ from pathlib import Path
 import pytest
 
 from wordle.enums import LetterStatus, GameStatus
+from wordle.word_list import WordList
 from wordle.wordle_game import WordleGame
 
 @pytest.fixture
-def sample_game():
+def sample_game(word_list: WordList) -> WordleGame:
     """Fixture providing a basic game instance"""
-    return WordleGame(target_word="CRANE")
-
-@pytest.fixture(autouse=True)
-def reset_wordlegame_class_state():
-    """Reset the class-level state before each test"""
-    WordleGame._valid_words = None
-    yield
-    # Clean up after test too
-    WordleGame._valid_words = None
+    return WordleGame(word_list=word_list, target_word="CRANE")
 
 class TestEvaluateGuess:
     """Test suite for _evaluate_guess method"""
@@ -90,9 +83,9 @@ class TestEvaluateGuess:
         assert result[4]["letter"] == "E"
         assert result[4]["status"] == LetterStatus.CORRECT.value
 
-    def test_duplicate_letters_in_target(self):
+    def test_duplicate_letters_in_target(self, word_list):
         """Test handling when the target word has duplicate letters"""
-        game = WordleGame(target_word="SPEED")
+        game = WordleGame(word_list=word_list, target_word="SPEED")
         result = game._evaluate_guess("SUEDE")
 
         # S in position 0 should be correct
@@ -191,7 +184,7 @@ class TestMakeGuess:
 
 class TestValidateGuess:
     """Test suite for validate_guess_format method"""
-    # Incorrect Length and invalid characters tested above in TestMakeGuess
+    # Note: Incorrect Length and invalid characters tested above in TestMakeGuess
 
     def test_valid_five_letter_word(self):
         """Test validation of a valid 5-letter word"""
@@ -271,83 +264,33 @@ class TestAPIFetch:
     def test_word_of_the_day_retrieved(self):
         pass
 
-class TestLoadValidWords:
-    """Test suite for the _load_valid_words_from_file method"""
-
-    def test_valid_words_loaded(self):
-        """Test that valid words are loaded"""
-        valid_words = WordleGame._load_valid_words_from_file(WordleGame.RESOURCES_DIR / WordleGame.VALID_WORDS_FILE)
-        assert len(valid_words) > 0
-
-    def test_valid_words_file_not_found(self):
-        """Test error handling for a missing valid words file"""
-        with pytest.raises(FileNotFoundError, match="Word list file not found"):
-            WordleGame._load_valid_words_from_file(WordleGame.RESOURCES_DIR / "invalid-file.txt")
-
-    def test_valid_words_no_valid_words_found(self):
-        """Test ValueError when the file contains no valid 5-letter words"""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt') as f:  # delete=True by default
-            f.write("CAR\n")  # Too short
-            f.write("HOUSES\n")  # Too long
-            f.write("CR4NE\n")  # Contains number
-            f.write("123AB\n")  # Contains numbers
-            f.write("\n")  # Empty line
-            f.write("   \n")  # Whitespace only
-            f.flush()  # Ensure data is written to the disk
-
-            with pytest.raises(ValueError, match="No valid words found"):
-                WordleGame._load_valid_words_from_file(Path(f.name))
-
-    def test_valid_words_empty_file(self):
-        """Test ValueError when a file is completely empty"""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt') as f:
-            f.flush()  # Create an empty file
-
-            with pytest.raises(ValueError, match="No valid words found"):
-                WordleGame._load_valid_words_from_file(Path(f.name))
-
-    def test_load_valid_words_with_invalid_entries(self):
-        """Test loading words with some invalid entries that should be filtered out"""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt') as f:
-            f.write("CRANE\n")  # Valid
-            f.write("CAR\n")  # Too short
-            f.write("HOUSES\n")  # Too long
-            f.write("CR4NE\n")  # Contains number
-            f.write("WORLD\n")  # Valid
-            f.write("\n")  # Empty line
-            f.write("  STARE  \n")  # Valid with whitespace
-            f.flush()
-
-            valid_words = WordleGame._load_valid_words_from_file(Path(f.name))
-
-            assert len(valid_words) == 3
-            assert "CRANE" in valid_words
-            assert "WORLD" in valid_words
-            assert "STARE" in valid_words
-            assert "CAR" not in valid_words
-            assert "HOUSES" not in valid_words
-            assert "CR4NE" not in valid_words
-
 
 class TestEnsureTargetIsValid:
-    """Test suite for the _ensure_target_is_valid method"""
+    """Test suite for ensuring a target is valid and adding it to the word list if necessary"""
 
-    def test_target_word_is_in_valid_list(self, sample_game: WordleGame):
-        assert sample_game.target_word in sample_game.valid_words
+    def test_target_word_already_valid(self, word_list: WordList):
+        """Test when the target word is already in valid list - should do nothing"""
+        # Create game with target word that's already in the word list
+        original_size = len(word_list.words)
+        game = WordleGame(word_list=word_list, target_word="CRANE")  # CRANE is in fixture
 
-    # TODO: Think about this test when using not valid word - don't want test cases persisted
-    def test_target_word_not_in_valid_list(self):
-        # Target not in the initial valid list
-        valid_words = WordleGame._load_valid_words_from_file(WordleGame.RESOURCES_DIR / WordleGame.VALID_WORDS_FILE)
-        original_valid_words_count = len(valid_words)
-        t_word = "ELLOH"
-        assert t_word not in valid_words
+        # Should not change the word list
+        assert len(game.word_list.words) == original_size
+        assert game.word_list.is_valid("CRANE")
 
-        game = WordleGame(target_word=t_word)
+    def test_game_initialization_adds_invalid_target_word(self, word_list: WordList):
+        """Test that creating a game with an invalid target word adds it to the word list"""
+        # Check that the target word is not in the word list
+        assert "ZZZZZ" not in word_list.words
+        original_size = len(word_list.words)
 
-        # Verify the target word was added
-        assert game.target_word in game.valid_words
-        assert len(game.valid_words) == original_valid_words_count + 1
+        # Create game with target word NOT in the word list
+        game = WordleGame(word_list, target_word="ZZZZZ")  # Not in the fixture
+
+        # Should add the word
+        assert len(game.word_list.words) == original_size + 1
+        assert game.word_list.is_valid("ZZZZZ")
+
 
 class TestWordleGameIntegration:
     """Integration test suite for full WordleGame scenarios"""
@@ -404,9 +347,9 @@ class TestWordleGameIntegration:
         assert final_state["guesses"] == wrong_guesses
 
     @pytest.mark.integration
-    def test_game_progression_tracking(self):
+    def test_game_progression_tracking(self, word_list: WordList):
         """Test that game properly tracks progression through multiple guesses"""
-        game = WordleGame(target_word="WORLD")
+        game = WordleGame(word_list=word_list, target_word="WORLD")
 
         guesses = ["STARE", "CLOUD", "WORLD"]
 
@@ -427,9 +370,9 @@ class TestWordleGameIntegration:
         assert game.status == GameStatus.WON
 
     @pytest.mark.integration
-    def test_game_invalid_guess(self):
+    def test_game_invalid_guess(self, word_list: WordList):
         """Test that the game handles invalid guesses"""
-        game = WordleGame(target_word="WORLD")
+        game = WordleGame(word_list=word_list, target_word="WORLD")
 
         with pytest.raises(ValueError, match="Guess must be a valid English word"):
             game.make_guess("AAAAA")

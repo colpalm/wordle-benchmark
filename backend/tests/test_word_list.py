@@ -5,37 +5,6 @@ import pytest
 
 from wordle.word_list import WordList
 
-@pytest.fixture
-def temp_base_words_file():
-    """Create a temporary file with valid base words"""
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
-        f.write("CRANE\n")
-        f.write("STARE\n")
-        f.write("WORLD\n")
-        f.write("HELLO\n")
-        f.flush()
-        yield Path(f.name)
-        Path(f.name).unlink()  # Clean up
-
-@pytest.fixture
-def nonexistent_log_file():
-    """Provide the path to the log file that doesn't exist (realistic scenario)"""
-    temp_dir = Path(tempfile.mkdtemp())
-    log_path = temp_dir / "added_words.log"  # Path exists, file doesn't
-
-    yield log_path
-
-    # Cleanup
-    if log_path.exists():
-        log_path.unlink()
-    temp_dir.rmdir()
-
-@pytest.fixture
-def word_list(temp_base_words_file, nonexistent_log_file):
-    """Create a basic WordList for testing validation"""
-    word_list = WordList(temp_base_words_file, nonexistent_log_file)
-
-    yield word_list
 
 class TestWordListLoading:
     """Test suite for WordList file loading functionality"""
@@ -54,17 +23,29 @@ class TestWordListLoading:
         """Test loading when the log file doesn't exist yet (first run)"""
         word_list = WordList(temp_base_words_file, nonexistent_log_file)
         words = word_list.words
-        assert len(words) == 4
+
+        # Extract words from the base file for count comparison - ignore empty lines
+        base_lines = [line for line in temp_base_words_file.read_text().splitlines() if line.strip()]
+
+        assert len(words) == len(base_lines)
+        # Check a few select words
         assert "CRANE" in words
         assert "STARE" in words
         assert "WORLD" in words
         assert "HELLO" in words
+        assert "CLOUD" in words
 
     def test_load_with_existing_additions(self, temp_base_words_file, log_file_with_entries):
         """Test loading when the log file has previous additions"""
         word_list = WordList(temp_base_words_file, log_file_with_entries)
         words = word_list.words
-        assert len(words) == 6
+
+        # Extract words from the base file for count comparison - ignore empty lines
+        base_lines = [line for line in temp_base_words_file.read_text().splitlines() if line.strip()]
+        log_lines = [line for line in log_file_with_entries.read_text().splitlines() if line.strip()]
+        expected_total = len(base_lines) + len(log_lines)
+
+        assert len(words) == expected_total
 
     def test_load_words_nonexistent_base_file(self, nonexistent_log_file):
         """Test error when the base words file doesn't exist"""
@@ -130,7 +111,11 @@ class TestWordListLoading:
         # First access should trigger loading
         words = word_list.words
         assert word_list._words is not None
-        assert len(words) == 4
+
+        # Extract words from the base file for count comparison - ignore empty lines
+        base_lines = [line for line in temp_base_words_file.read_text().splitlines() if line.strip()]
+
+        assert len(words) == len(base_lines)
 
         # Later access should use the cached version
         words2 = word_list.words
