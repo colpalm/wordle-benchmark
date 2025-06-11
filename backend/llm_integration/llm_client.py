@@ -39,23 +39,6 @@ class LLMClient(ABC):
         """
         pass
 
-    @abstractmethod
-    def get_model_info(self) -> dict[str, Any]:
-        """
-        Return detailed information about the model for logging/analysis.
-
-        Returns:
-            Dictionary with model metadata like:
-            {
-                "provider": "openai",
-                "model": "gpt-4o-mini",
-                "version": "2024-07-18",
-                "max_tokens": 16384,
-                "supports_system_messages": True
-            }
-        """
-        pass
-
 class LLMError(Exception):
     """Base exception for LLM-related errors."""
     pass
