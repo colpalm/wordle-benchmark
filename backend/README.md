@@ -7,6 +7,11 @@ uv run python -m wordle.wordle_game
 
 Run Test Suite:
 
+Run tests that do not make API calls - **START HERE** — api_calls cost money
+```shell
+uv run pytest -m "not api_calls" ./tests/
+```
+
 All Tests
 ```shell
 uv run pytest ./tests/
