@@ -7,15 +7,15 @@ class PromptTemplate(ABC):
 
     # Base game instructions shared across all templates
     BASE_INSTRUCTIONS = textwrap.dedent("""
-            You are playing Wordle. Guess the 5-letter word in 6 tries or fewer.
+        You are playing Wordle. Guess the 5-letter word in 6 tries or fewer.
 
-            Rules:
-            - Each guess must be a valid 5-letter word
-            - After each guess, you'll get feedback:
-              * "correct" - letter is in the word and in the right position (green)
-              * "present" - letter is in the word but in the wrong position (yellow)
-              * "absent" - letter is not in the word (gray)
-            """)
+        Rules:
+        - Each guess must be a valid 5-letter word
+        - After each guess, you'll get feedback:
+          * "correct" - letter is in the word and in the right position (green)
+          * "present" - letter is in the word but in the wrong position (yellow)
+          * "absent" - letter is not in the word (gray)
+        """).lstrip()
 
     @abstractmethod
     def format_prompt(self, game_state: dict) -> str:
@@ -34,16 +34,16 @@ class PromptTemplate(ABC):
 
         for i, guess in enumerate(game_state["guesses"]):
             guess_result = game_state["guess_results"][i]
-            prompt_with_history += f"{i + 1}. {guess}:"
+            prompt_with_history += f"{i + 1}. {guess}: "
 
             # Format result
             result_parts = []
             for letter_result in guess_result:
                 letter = letter_result["letter"]
                 status = letter_result["status"]
-                result_parts.append(f"{letter}({status})")
+                result_parts.append(f"{letter} ({status})")
 
-            prompt_with_history += " ".join(result_parts) + "\n"
+            prompt_with_history += ", ".join(result_parts) + "\n"
 
         prompt_with_history += "\n"
         return prompt_with_history
@@ -57,6 +57,7 @@ class PromptTemplate(ABC):
         prompt += f"Guesses remaining: {guesses_remaining}\n\n"
 
         return prompt
+
 
 class SimplePromptTemplate(PromptTemplate):
     """Simple baseline prompt template with just the basic rules"""
@@ -84,7 +85,7 @@ class SimplePromptTemplate(PromptTemplate):
 
 
 class JsonPromptTemplate(PromptTemplate):
-    """JSON prompt template with reasoning and guess fields"""
+    """JSON-based prompt template with chain-of-thought reasoning"""
 
     def get_template_name(self) -> str:
         return "json"
@@ -94,21 +95,6 @@ class JsonPromptTemplate(PromptTemplate):
         # Base instructions
         prompt = self.BASE_INSTRUCTIONS
 
-        # Add JSON-specific instructions
-        prompt += textwrap.dedent("""
-        IMPORTANT: You must respond in valid JSON format with exactly two fields:
-        {
-            "reasoning": "Your 1-2 sentence explanation for your guess",
-            "guess": "YOUR5LETTERWORD"
-        }
-
-        Example response:
-        {
-            "reasoning": "Based on the feedback, I know the word contains R and E but not in positions 2 and 5. I'll try a common word with R and E in different positions.",
-            "guess": "CRANE"
-        }
-        """)
-
         # Add game history if available
         if game_state.get("guesses"):
             prompt = self._add_game_history(prompt, game_state)
@@ -116,9 +102,22 @@ class JsonPromptTemplate(PromptTemplate):
         # Add current state
         prompt = self._add_current_state(prompt, game_state)
 
-        # Request next guess in JSON format
-        prompt += "Remember: Respond with valid JSON containing 'reasoning' (1-2 sentences) and 'guess' fields.\n\n"
-        prompt += "Your response:"
+        # Add JSON-specific instructions
+        prompt += textwrap.dedent("""
+        IMPORTANT: You must respond in valid JSON format with exactly two fields:
+        {
+            "reasoning": "Your 1-2 sentence explanation for your guess",
+            "guess": "YOUR 5 LETTER WORD"
+        }
+
+        Example response:
+        {
+            "reasoning": "Based on the feedback, I know the word contains R in position 2 and E not in positions 3. I'll try a common word with R in position 2 and E in a different position.",
+            "guess": "CRANE"
+        }
+
+        Your response:
+        """).strip()
 
         return prompt
 

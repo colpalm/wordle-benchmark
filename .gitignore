@@ -177,3 +177,6 @@ cython_debug/
 scripts/valid-word-list-generation/nyt*
 scripts/valid-word-list-generation/valid-word-differences.txt
 scripts/valid-word-list-generation/wl.txt
+
+# AI Tools
+.junie/
