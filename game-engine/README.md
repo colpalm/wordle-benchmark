@@ -2,7 +2,7 @@
 
 Run Wordle Logic:
 ```shell
-uv run python -m wordle.wordle_game
+uv run --directory src python -m wordle.wordle_game
 ```
 
 Run Test Suite:

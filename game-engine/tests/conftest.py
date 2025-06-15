@@ -3,7 +3,16 @@ from pathlib import Path
 
 import pytest
 
+from utils.logging_config import configure_logging
 from wordle.word_list import WordList
+
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_logging():
+    """Configure logging for all tests."""
+    # Use a higher log level for tests to reduce noise
+    configure_logging(log_level="WARNING")
+    yield
 
 
 @pytest.fixture

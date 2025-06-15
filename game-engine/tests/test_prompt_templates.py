@@ -1,6 +1,9 @@
 import pytest
 
+from utils.logging_config import get_logger
 from wordle.prompt_templates import PromptTemplateFactory, SimplePromptTemplate, JsonPromptTemplate
+
+logger = get_logger(__name__)
 
 class BasePromptTemplate:
     """Base test class with common tests for all prompt templates"""
@@ -64,7 +67,7 @@ class BasePromptTemplate:
         }
 
     @staticmethod
-    def determine_prompt_printing_header(template) -> str:
+    def determine_prompt_logging_header(template) -> str:
         """Based on the prompt template, configure the header statement"""
         if isinstance(template, SimplePromptTemplate):
             return f"\n{"=" * 10} SIMPLE PROMPT TEMPLATE WITH NO GUESSES {"=" * 10}"
@@ -84,7 +87,8 @@ class BasePromptTemplate:
         expected_name = self.get_expected_template_name()
         assert template.get_template_name() == expected_name
 
-    def test_prompt_is_string(self, template, empty_game_state):
+    @staticmethod
+    def test_prompt_is_string(template, empty_game_state):
         """Test that prompt returns a string"""
         prompt = template.format_prompt(empty_game_state)
         assert isinstance(prompt, str)
@@ -108,9 +112,9 @@ class BasePromptTemplate:
         assert "Previous guesses:" not in prompt
 
         # Can view template when running tests with -s
-        prompt_header = self.determine_prompt_printing_header(template)
-        print(prompt_header)
-        print(prompt)
+        prompt_header = self.determine_prompt_logging_header(template)
+        logger.debug(prompt_header)
+        logger.debug(prompt)
 
     def test_prompt_with_game_history(self, template, game_with_one_guess):
         """Test prompt includes game history correctly"""
@@ -126,9 +130,9 @@ class BasePromptTemplate:
         assert "Guesses remaining: 5" in prompt
 
         # Can view template when running tests with -s
-        prompt_header = self.determine_prompt_printing_header(template)
-        print(prompt_header)
-        print(prompt)
+        prompt_header = self.determine_prompt_logging_header(template)
+        logger.debug(prompt_header)
+        logger.debug(prompt)
 
     def test_prompt_with_multiple_guesses(self, template, game_with_multiple_guesses):
         """Test prompt with multiple guesses in history"""
@@ -143,9 +147,9 @@ class BasePromptTemplate:
         assert "Guesses remaining: 4" in prompt
 
         # Can view template when running tests with -s
-        prompt_header = self.determine_prompt_printing_header(template)
-        print(prompt_header)
-        print(prompt)
+        prompt_header = self.determine_prompt_logging_header(template)
+        logger.debug(prompt_header)
+        logger.debug(prompt)
 
     @staticmethod
     def test_guess_result_formatting(template, game_with_one_guess):

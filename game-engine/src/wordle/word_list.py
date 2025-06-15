@@ -2,6 +2,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
+from utils.logging_config import get_logger
+
+logger = get_logger(__name__)
+
 
 class WordList:
     """
@@ -29,7 +33,7 @@ class WordList:
         Returns a reference to the internal set - mutations affect all instances.
         """
         if self._words is None:
-            print("Loading valid words for the first time...")
+            logger.info("Loading valid words for the first time...")
             self._words = self._load_all_valid_words()
         return self._words
 
@@ -54,7 +58,7 @@ class WordList:
             self.words.add(word)
             # Log to file for persistence
             self._log_word(word)
-            print(f"Added new word '{word}' to valid words list.")
+            logger.info(f"Added new word '{word}' to valid words list.")
 
     def _load_all_valid_words(self) -> set[str]:
         """Load the complete set of valid words by combining base words and added words."""
@@ -76,7 +80,7 @@ class WordList:
                         if self._is_valid_word_format(word):
                             added_words.add(word.upper())
         except (IOError, PermissionError) as e:
-            print(f"Warning: Could not read added words log: {e}")
+            logger.error(f"Could not read added words log: {e}")
 
         return added_words
 
@@ -120,7 +124,7 @@ class WordList:
             with open(self.added_valid_words_path, "a", encoding='utf-8') as f:
                 f.write(f"{datetime.now().isoformat()}: {word}\n")
         except (IOError, PermissionError) as e:
-            print(f"Warning: Could not log added word to file: {e}")
+            logger.error(f"Could not log added word to file: {e}")
 
     @staticmethod
     def _is_valid_word_format(word: str) -> bool:

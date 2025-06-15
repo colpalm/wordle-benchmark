@@ -5,6 +5,9 @@ import requests
 
 from wordle.enums import GameStatus, LetterStatus
 from wordle.word_list import WordList
+from utils.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 class WordleGame:
@@ -42,10 +45,10 @@ class WordleGame:
     def _ensure_target_is_valid(self) -> None:
         """Ensure the target word is in our valid word list. Add it if not."""
         if not self.word_list.is_valid(self.target_word):
-            print(f"Warning: Target word '{self.target_word}' not in valid words list. Adding it to ensure winnability.")
+            logger.warning(f"Target word '{self.target_word}' not in valid words list. Adding it to ensure winnability.")
             self.word_list.add_word(self.target_word)
         else:
-            print(f"Target word '{self.target_word}' is valid.")
+            logger.debug(f"Target word '{self.target_word}' is valid.")
 
     def _fetch_daily_word(self, date: Optional[str]) -> str:
         """Fetch today's Wordle solution from NYT API"""
@@ -192,6 +195,10 @@ class WordleGame:
 # Example usage and testing
 if __name__ == "__main__":
     from pathlib import Path
+    from utils.logging_config import configure_logging
+
+    # Configure logging
+    configure_logging()
 
     # Setup WordList
     resource_dir = Path(__file__).parent / "resources"
@@ -201,7 +208,7 @@ if __name__ == "__main__":
     )
 
     # Test with a known word
-    print("=== Testing with known word 'CRANE' ===")
+    logger.info("=== Testing with known word 'CRANE' ===")
     game = WordleGame(word_list=valid_words, target_word="CRANE")
 
     test_guesses = ["STARE", "CRANE"]
@@ -209,15 +216,15 @@ if __name__ == "__main__":
     for guess in test_guesses:
         try:
             result = game.make_guess(guess)
-            print(f"\nGuess: {guess}")
-            print(f"Status: {result['status']}")
-            print("Letter results:")
+            logger.info(f"\nGuess: {guess}")
+            logger.info(f"Status: {result['status']}")
+            logger.info("Letter results:")
             for letter_result in result['result']:
-                print(f"  {letter_result['letter']} at position {letter_result['position']}: {letter_result['status']}")
+                logger.info(f"  {letter_result['letter']} at position {letter_result['position']}: {letter_result['status']}")
 
             if result['status'] != 'in_progress':
-                print(f"\nGame Over! Target word was: {result['target_word']}")
+                logger.info(f"\nGame Over! Target word was: {result['target_word']}")
                 break
 
         except Exception as e:
-            print(f"Error making guess '{guess}': {e}")
+            logger.error(f"Error making guess '{guess}': {e}")
