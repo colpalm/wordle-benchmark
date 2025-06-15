@@ -160,7 +160,9 @@ class TestJsonResponseParser:
         """Test parsing a valid JSON response with the guess field"""
         response = '{"reasoning": "This is my reasoning", "guess": "CRANE"}'
         result = parser.extract_guess(response)
+        reasoning_response = parser.extract_reasoning(response)
         assert result == "CRANE"
+        assert reasoning_response == "This is my reasoning"
 
     def test_valid_json_lowercase_guess(self, parser):
         """Test parsing a valid JSON response with lowercase guess"""
@@ -179,6 +181,12 @@ class TestJsonResponseParser:
         response = '{"reasoning": "This is my reasoning"}'
         with pytest.raises(ValueError, match="JSON response missing 'guess' field"):
             parser.extract_guess(response)
+
+    def test_json_missing_reasoning_field(self, parser):
+        """Test JSON response missing the reasoning field"""
+        response = '{"guess": "CRANE"}'
+        with pytest.raises(ValueError, match="JSON response missing 'reasoning' field"):
+            parser.extract_reasoning(response)
 
     def test_invalid_json_format(self, parser):
         """Test invalid JSON format"""
@@ -200,17 +208,15 @@ class TestJsonResponseParser:
 class TestResponseParserFactory:
     """Test suite for ResponseParserFactory"""
 
-    def test_create_simple_parser(self):
-        """Test creating a simple parser"""
-        parser = ResponseParserFactory.create_parser("simple")
-        assert isinstance(parser, SimpleResponseParser)
-        assert parser.get_parser_name() == "simple"
-
-    def test_create_json_parser(self):
-        """Test creating a JSON parser"""
-        parser = ResponseParserFactory.create_parser("json")
-        assert isinstance(parser, JsonResponseParser)
-        assert parser.get_parser_name() == "json"
+    @pytest.mark.parametrize("parser_name, expected_class", [
+        ("simple", SimpleResponseParser),
+        ("json", JsonResponseParser),
+    ])
+    def test_create_parser(self, parser_name, expected_class):
+        """Test creating parsers by name"""
+        parser = ResponseParserFactory.create_parser(parser_name)
+        assert isinstance(parser, expected_class)
+        assert parser.get_parser_name() == parser_name
 
     def test_unknown_parser(self):
         """Test error when requesting an unknown parser"""

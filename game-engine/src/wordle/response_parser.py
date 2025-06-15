@@ -1,7 +1,7 @@
 import json
 import re
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Optional
 
 from wordle.wordle_game import WordleGame
 
@@ -30,6 +30,19 @@ class ResponseParser(ABC):
         """Return the name/identifier for this parser"""
         pass
 
+    def extract_reasoning(self, response: str) -> Optional[str]:
+        """
+        Extract reasoning from the LLM response if available
+
+        Args:
+            response: Raw text response from LLM
+
+        Returns:
+            Extracted reasoning text, or None if not available/applicable
+        """
+        # Default implementation - parsers can override if they support reasoning
+        return None
+
 
 class SimpleResponseParser(ResponseParser):
     """Parser for simple text responses with quoted words, all-caps, or last word extraction"""
@@ -42,22 +55,6 @@ class SimpleResponseParser(ResponseParser):
         return "simple"
 
     def extract_guess(self, response: str) -> str:
-        """
-        Try multiple extraction methods in order of preference
-
-        Args:
-            response: Raw text response from LLM
-
-        Returns:
-            Best extracted guess
-
-        Raises:
-            ValueError: If all methods fail
-        """
-        return self.extract_guess_multimethod(response)
-
-    @staticmethod
-    def extract_guess_multimethod(response: str) -> str:
         """
         Try multiple extraction methods in order of preference
 
@@ -133,26 +130,59 @@ class JsonResponseParser(ResponseParser):
         Raises:
             ValueError: If JSON parsing fails or required fields are missing
         """
+        json_data = self._parse_json_response(response)
+
+        # Extract guess field
         try:
-            # Parse JSON response
-            response = response.strip()
-            json_data = json.loads(response)
-
-            # Extract guess field
-            if "guess" not in json_data:
-                raise ValueError("JSON response missing 'guess' field")
-
             guess = json_data["guess"]
+        except KeyError:
+            raise ValueError("JSON response missing 'guess' field")
 
-            # Validate guess format
-            is_valid, error_msg = WordleGame.validate_guess_format(guess)
-            if not is_valid:
-                raise ValueError(f"Invalid guess format: {error_msg}")
+        # Validate guess format
+        is_valid, error_msg = WordleGame.validate_guess_format(guess)
+        if not is_valid:
+            raise ValueError(f"Invalid guess format: {error_msg}")
 
-            return guess.upper()
+        return guess.upper()
 
-        except json.JSONDecodeError:
-            raise ValueError(f"Failed to parse JSON response: '{response}'")
+    def extract_reasoning(self, response: str) -> Optional[str]:
+        """
+        Extract reasoning from a JSON-formatted response
+
+        Args:
+            response: JSON-formatted response from LLM
+
+        Returns:
+            Extracted reasoning text, or None if not present
+
+        Raises:
+            ValueError: If JSON parsing fails or the reasoning field is missing
+        """
+        json_data = self._parse_json_response(response)
+        try:
+            return json_data["reasoning"]
+        except KeyError:
+            raise ValueError("JSON response missing 'reasoning' field")
+
+    @staticmethod
+    def _parse_json_response(response: str) -> dict:
+        """
+        Parse JSON response with helpful error messages
+
+        Args:
+            response: Raw response string
+
+        Returns:
+            Parsed JSON data
+
+        Raises:
+            ValueError: If JSON parsing fails
+        """
+        try:
+            response = response.strip()
+            return json.loads(response)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Failed to parse JSON response: {e}")
 
 
 class ResponseParserFactory:
