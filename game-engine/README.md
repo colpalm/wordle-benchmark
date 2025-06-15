@@ -32,7 +32,12 @@ Specific File
 uv run pytest ./tests/test_wordle_logic.py
 ```
 
-Not capturing standard out (`-s`)
+Set a specific logging level
 ```shell
-uv run pytest ./tests/ -s
+uv run pytest --log-cli-level=DEBUG -m "not api_calls" tests/
+```
+
+Run a specific test
+```shell
+uv run pytest -m "not api_calls" tests/test_prompt_templates.py::TestSimplePromptTemplate::test_first_guess_prompt_structure
 ```
