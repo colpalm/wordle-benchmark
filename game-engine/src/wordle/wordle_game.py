@@ -51,7 +51,7 @@ class WordleGame:
         else:
             logger.debug(f"Target word '{self.target_word}' is valid.")
 
-    def _fetch_daily_word(self, date: Optional[str]) -> str:
+    def _fetch_daily_word(self, date: Optional[str] = None) -> str:
         """Fetch today's Wordle solution from NYT API"""
         if date is None:
             date = datetime.now().strftime("%Y-%m-%d")

@@ -259,13 +259,6 @@ class TestGameState:
         assert state["won"] is False
         assert state["game_over"] is True
 
-class TestAPIFetch:
-    """Test suite for the _fetch_wordle_data method"""
-
-    # TODO: add test for word of the day retrieval
-    def test_word_of_the_day_retrieved(self):
-        pass
-
 
 class TestEnsureTargetIsValid:
     """Test suite for ensuring a target is valid and adding it to the word list if necessary"""
@@ -292,6 +285,18 @@ class TestEnsureTargetIsValid:
         # Should add the word
         assert len(game.word_list.words) == original_size + 1
         assert game.word_list.is_valid("ZZZZZ")
+
+
+class TestAPIFetch:
+    """Test suite for the _fetch_daily_word method"""
+
+    @pytest.mark.integration
+    @pytest.mark.api_calls
+    def test_word_of_the_day_retrieved(self, sample_game):
+        """Test that the word of the day is retrieved"""
+        word = sample_game._fetch_daily_word()
+        assert isinstance(word, str)
+        assert len(word) == WordleGame.WORD_LENGTH
 
 
 class TestWordleGameIntegration:
