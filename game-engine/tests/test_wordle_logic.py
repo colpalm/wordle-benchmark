@@ -212,6 +212,7 @@ class TestGameState:
         assert state["status"] == GameStatus.IN_PROGRESS.value
         assert state["guesses"] == []
         assert state["guess_results"] == []
+        assert state["guess_reasoning"] == []
         assert state["guesses_made"] == 0
         assert state["guesses_remaining"] == 6
         assert state["target_word"] is None  # Hidden during the game
@@ -220,12 +221,13 @@ class TestGameState:
 
     def test_game_state_after_guess(self, sample_game: WordleGame):
         """Test game state after making a guess"""
-        sample_game.make_guess("STARE")
+        sample_game.make_guess("STARE", "My first guess")
         state = sample_game.get_game_state()
 
         assert state["status"] == GameStatus.IN_PROGRESS.value
         assert state["guesses"] == ["STARE"]
         assert len(state["guess_results"]) == 1
+        assert len(state["guess_reasoning"]) == 1
         assert state["guesses_made"] == 1
         assert state["guesses_remaining"] == 5
         assert state["won"] is False
