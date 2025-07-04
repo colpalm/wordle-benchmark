@@ -93,13 +93,42 @@ class TestGameRunner:
         assert result["game_state"]["guesses"] == ["STARE", "CRANE"]
         assert len(result["game_state"]["guess_reasoning"]) == 2
 
+    def test_complete_losing_game(self, game_runner, llm_client):
+        """
+        Given I play a full game with 6 incorrect guesses
+        When I mock the json responses with words that don't match the target
+        Then the game should be completed with a losing result
+        """
+        # Target word is "CRANE" (from fixture), so these guesses will all be wrong
+        json_responses = [
+            '{"reasoning": "Starting with vowels and common consonants", "guess": "STARE"}',
+            '{"reasoning": "Trying different vowel placement", "guess": "LIGHT"}',
+            '{"reasoning": "Testing new consonant combinations", "guess": "MOUND"}',
+            '{"reasoning": "Exploring different letter patterns", "guess": "FIFTY"}',
+            '{"reasoning": "Trying another combination", "guess": "BUMPS"}',
+            '{"reasoning": "Final attempt with remaining letters", "guess": "GHOST"}'
+        ]
+
+        with patch.object(llm_client, 'generate_response', side_effect=json_responses):
+            result = game_runner.run_complete_game()
+
+        assert result["game_state"]["won"] is False
+        assert result["game_state"]["game_over"] is True
+        assert result["game_state"]["status"] == "lost"
+        assert result["game_state"]["guesses_made"] == 6
+        assert result["game_state"]["guesses_remaining"] == 0
+        assert result["game_state"]["target_word"] == "CRANE"
+        assert result["game_state"]["guesses"] == ["STARE", "LIGHT", "MOUND", "FIFTY", "BUMPS", "GHOST"]
+        assert len(result["game_state"]["guess_reasoning"]) == 6
+        assert result["success"] is True
+
     def test_make_guess_attempt_llm_failure(self, game_runner, llm_client):
         """Test LLM failure handling during guess attempt."""
         # Given an initialized game
         game_runner._initialize_game()
         initial_guesses = len(game_runner.game.guesses)
 
-        # When we make a guess attempt and get get an LLMError
+        # When we make a guess attempt and get an LLMError
         with patch.object(llm_client, 'generate_response', side_effect=LLMError("Simulated LLM failure")):
             # Then it should raise the LLM error
             with pytest.raises(LLMError, match="Simulated LLM failure"):
