@@ -41,3 +41,8 @@ Run a specific test
 ```shell
 uv run pytest -m "not api_calls" tests/test_prompt_templates.py::TestSimplePromptTemplate::test_first_guess_prompt_structure
 ```
+
+Run the specific full integration test (other integration tests in the file)
+```shell
+uv run pytest tests/integration/test_game_runner_integration.py::TestGameRunnerIntegration::test_complete_game_end_to_end -v -s --log-cli-level=DEBUG
+```

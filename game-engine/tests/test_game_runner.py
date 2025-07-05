@@ -197,3 +197,226 @@ class TestGameRunner:
         assert result["metadata"]["template"] == "json"
         assert result["metadata"]["parser"] == "json"
         assert result["metadata"]["duration_seconds"] == pytest.approx(15.0)
+
+
+class TestGameRunnerRetryLogic:
+    """Test suite for the new retry logic for invalid words and parsing failures."""
+
+    def test_invalid_word_retry_success(self, game_runner, llm_client):
+        """
+        GIVEN a GameRunner with an initialized game
+        WHEN the LLM first guesses an invalid word, then a valid word
+        THEN the invalid word should be retried and the valid word should be accepted
+        """
+        game_runner._initialize_game()
+
+        # Mock LLM responses: first invalid, then valid
+        json_responses = [
+            '{"reasoning": "Trying a random word", "guess": "ZXXCV"}',  # Invalid word
+            '{"reasoning": "Trying a real word", "guess": "STARE"}'  # Valid word
+        ]
+
+        with patch.object(llm_client, 'generate_response', side_effect=json_responses):
+            game_runner._make_guess_attempt()
+
+        # Should have made the valid guess
+        assert game_runner.game.guesses[-1] == "STARE"
+        assert game_runner.game.guess_reasoning[-1] == "Trying a real word"
+        assert len(game_runner.game.guesses) == 1
+
+        # Should have tracked the invalid attempt
+        assert "ZXXCV" in game_runner.invalid_word_attempts
+        assert len(game_runner.invalid_word_attempts) == 1
+
+    def test_invalid_word_multiple_retries_success(self, game_runner, llm_client):
+        """
+        GIVEN a GameRunner with an initialized game
+        WHEN the LLM guesses multiple invalid words, then a valid word
+        THEN all invalid words should be tracked and the valid word accepted
+        """
+        game_runner._initialize_game()
+
+        # Mock LLM responses: two invalid, then valid
+        json_responses = [
+            '{"reasoning": "First try", "guess": "ZXXCV"}',  # Invalid
+            '{"reasoning": "Second try", "guess": "QWERT"}',  # Invalid
+            '{"reasoning": "Third try", "guess": "STARE"}'  # Valid
+        ]
+
+        with patch.object(llm_client, 'generate_response', side_effect=json_responses):
+            game_runner._make_guess_attempt()
+
+        # Should have made the valid guess
+        assert game_runner.game.guesses[-1] == "STARE"
+        assert len(game_runner.game.guesses) == 1
+
+        # Should have tracked both invalid attempts
+        assert "ZXXCV" in game_runner.invalid_word_attempts
+        assert "QWERT" in game_runner.invalid_word_attempts
+        assert len(game_runner.invalid_word_attempts) == 2
+
+    def test_invalid_across_multiple_guesses(self, game_runner, llm_client):
+        """
+        GIVEN a GameRunner with an initialized game
+        WHEN the LLM guesses multiple times with invali and valid words
+        THEN all invalid words should be tracked and the valid words accepted
+        """
+        game_runner._initialize_game()
+
+        json_responses = [
+            '{"reasoning": "First guess", "guess": "ZXXCV"}',  # Invalid
+            '{"reasoning": "First guess retry", "guess": "STARE"}',  # Valid - completes guess 1
+            '{"reasoning": "Second guess", "guess": "QWERT"}',  # Invalid
+            '{"reasoning": "Second guess retry", "guess": "CRANE"}'  # Valid - completes guess 2
+        ]
+
+        with patch.object(llm_client, 'generate_response', side_effect=json_responses):
+            game_runner._make_guess_attempt()  # First guess
+            game_runner._make_guess_attempt()  # Second guess
+
+        assert game_runner.game.guesses == ["STARE", "CRANE"]
+        assert "ZXXCV" in game_runner.invalid_word_attempts
+        assert "QWERT" in game_runner.invalid_word_attempts
+        assert len(game_runner.invalid_word_attempts) == 2
+
+    def test_invalid_word_max_retries_exceeded(self, game_runner, llm_client):
+        """
+        GIVEN a GameRunner with an initialized game
+        WHEN the LLM exceeds max retries for invalid words
+        THEN a descriptive error should be raised
+        """
+        game_runner._initialize_game()
+
+        # Mock LLM to always return invalid words (exceeds MAX_INVALID_WORD_RETRIES)
+        json_response = '{"reasoning": "Invalid word", "guess": "ZXXCV"}'
+        with patch.object(llm_client, 'generate_response', return_value=json_response):
+            with pytest.raises(ValueError, match="Could not get valid word from LLM after 5 attempts"):
+                game_runner._make_guess_attempt()
+
+        # Should have tracked all invalid attempts
+        assert len(game_runner.invalid_word_attempts) == game_runner.MAX_INVALID_WORD_RETRIES + 1
+
+    def test_parsing_error_retry_success(self, game_runner, llm_client):
+        """
+        GIVEN a GameRunner with an initialized game
+        WHEN the LLM first returns unparseable response, then valid JSON
+        THEN the parsing error should be retried and the valid response accepted
+        """
+        game_runner._initialize_game()
+
+        # Mock LLM responses: first unparseable, then valid JSON
+        llm_responses = [
+            "I think the word is STARE but I can't format it properly",  # Unparseable
+            '{"reasoning": "Trying a common word", "guess": "STARE"}'  # Valid JSON
+        ]
+
+        with patch.object(llm_client, 'generate_response', side_effect=llm_responses):
+            game_runner._make_guess_attempt()
+
+        # Should have made the valid guess
+        assert game_runner.game.guesses[-1] == "STARE"
+        assert game_runner.game.guess_reasoning[-1] == "Trying a common word"
+
+    def test_parsing_error_max_retries_exceeded(self, game_runner, llm_client):
+        """
+        GIVEN a GameRunner with an initialized game
+        WHEN the LLM exceeds max retries for parsing errors
+        THEN a descriptive error should be raised
+        """
+        game_runner._initialize_game()
+
+        # Mock LLM to always return unparseable responses (exceeds MAX_PARSING_RETRIES)
+        llm_responses = [
+            "I think STARE",
+            "The word is probably CRANE",
+            "Let me try WORLD this time",
+            "And again",
+            "And again again",
+            "And one more"
+        ]
+
+        with patch.object(llm_client, 'generate_response', side_effect=llm_responses):
+            with pytest.raises(ValueError, match="Could not parse valid guess from LLM response after 5 attempts"):
+                game_runner._make_guess_attempt()
+
+    def test_mixed_parsing_and_invalid_word_retries(self, game_runner, llm_client):
+        """
+        GIVEN a GameRunner with an initialized game
+        WHEN the LLM has both parsing errors and invalid words
+        THEN both should be retried independently, and success should be achieved
+        """
+        game_runner._initialize_game()
+
+        # Mock LLM responses: parsing error, then invalid word, then success
+        llm_responses = [
+            "I think the word is STARE",  # Parsing error
+            '{"reasoning": "Trying random", "guess": "ZXXCV"}',  # Invalid word
+            '{"reasoning": "Trying real word", "guess": "STARE"}'  # Success
+        ]
+
+        with patch.object(llm_client, 'generate_response', side_effect=llm_responses):
+            game_runner._make_guess_attempt()
+
+        # Should have made the valid guess
+        assert game_runner.game.guesses[-1] == "STARE"
+
+        # Should have tracked the invalid word attempt
+        assert "ZXXCV" in game_runner.invalid_word_attempts
+        assert len(game_runner.invalid_word_attempts) == 1
+
+    def test_prompt_feedback_with_invalid_words(self, game_runner):
+        """
+        GIVEN a GameRunner with invalid word attempts tracked
+        WHEN generating a prompt with feedback
+        THEN the prompt should include information about invalid words
+        """
+        game_runner._initialize_game()
+        game_runner.invalid_word_attempts = ["ZXXCV", "QWERT"]
+
+        prompt = game_runner._generate_prompt()
+
+        # Should contain feedback about invalid words
+        assert "not valid English words" in prompt
+        assert "ZXXCV, QWERT" in prompt
+
+    def test_prompt_feedback_no_invalid_words(self, game_runner):
+        """
+        GIVEN a GameRunner with no invalid word attempts
+        WHEN generating a prompt with feedback
+        THEN the prompt should not include invalid word feedback
+        """
+        game_runner._initialize_game()
+        game_runner.invalid_word_attempts = []
+
+        original_prompt = game_runner.prompt_template.format_prompt(game_runner.game.get_game_state())
+        feedback_prompt = game_runner._generate_prompt()
+
+        # Should be identical to the original prompt
+        assert feedback_prompt == original_prompt
+        assert "not valid English words" not in feedback_prompt
+
+    def test_complete_game_with_retries_tracked_in_metadata(self, game_runner, llm_client):
+        """
+        GIVEN a GameRunner that encounters invalid words during gameplay
+        WHEN running a complete game
+        THEN the final result should track all invalid word attempts in metadata
+        """
+        # Mock responses that include invalid words
+        json_responses = [
+            '{"reasoning": "First try", "guess": "ZXXCV"}',  # Invalid
+            '{"reasoning": "Second try", "guess": "STARE"}',  # Valid
+            '{"reasoning": "Final guess", "guess": "CRANE"}'  # Winning guess
+        ]
+
+        with patch.object(llm_client, 'generate_response', side_effect=json_responses):
+            result = game_runner.run_complete_game()
+
+        # Should have completed successfully
+        assert result["success"] is True
+        assert result["game_state"]["won"] is True
+
+        # Should track invalid attempts in metadata
+        assert "invalid_word_attempts" in result["metadata"]
+        assert "total_invalid_attempts" in result["metadata"]
+        assert result["metadata"]["invalid_word_attempts"] == ["ZXXCV"]
+        assert result["metadata"]["total_invalid_attempts"] == 1

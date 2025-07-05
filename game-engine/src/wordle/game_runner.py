@@ -29,6 +29,9 @@ class GameRunner:
                      "google/gemini-2.5-flash",
                      "google/gemini-2.5-pro"]
 
+    MAX_INVALID_WORD_RETRIES = 5  # How many times to retry invalid words per guess
+    MAX_PARSING_RETRIES = 5       # How many times to retry parsing failures per guess
+
     def __init__(
             self,
             word_list: WordList,
@@ -59,6 +62,9 @@ class GameRunner:
         # Game state
         self.game: WordleGame | None = None
         self.start_time: datetime | None = None
+
+        # Track retry information for this game session (all invalid words tried)
+        self.invalid_word_attempts: list[str] = []
 
     def run_complete_game(self) -> dict[str, Any]:
         """
@@ -106,45 +112,103 @@ class GameRunner:
             logger.info(f"\n--- Guess {guess_number}/{WordleGame.MAX_GUESSES} ---")
 
             try:
-                # Make a single guess attempt
                 self._make_guess_attempt()
                 guess_number += 1
 
             except Exception as e:
                 logger.error(f"💥 Failed to make guess {guess_number}: {e}")
-                # TODO: Currently failing fast - add retry logic
                 raise
 
+    # TODO: Refactor due to cognitive complexity
     def _make_guess_attempt(self) -> None:
-        """Make a single guess attempt."""
+        """Make a guess attempt with retry logic for parsing and invalid word errors."""
+        invalid_word_retries = 0
+        parsing_retries = 0
+
+        while True:
+            prompt = self._generate_prompt()
+            # Log the prompt for debugging if needed
+            logger.debug(f"Generated prompt:\n{prompt}")
+
+            # LLM response
+            logger.debug("Requesting LLM response...")
+            start_time = time.time()
+            raw_response = self.llm_client.generate_response(prompt)
+            response_time = time.time() - start_time
+
+            logger.debug(f"LLM response time: {response_time:.2f}s")
+            logger.debug(f"Raw response: '{raw_response}'")
+
+            # Parse the response
+            try:
+                guess = self.response_parser.extract_guess(raw_response)
+                reasoning = self.response_parser.extract_reasoning(raw_response)
+                parsing_retries = 0  # Reset parsing retries on successful parse
+            except ValueError as parse_error:
+                parsing_retries += 1
+                if parsing_retries <= self.MAX_PARSING_RETRIES:
+                    logger.warning(
+                        f"Failed to parse response (attempt {parsing_retries}/{self.MAX_PARSING_RETRIES}): {parse_error}")
+                    logger.debug(f"Problematic response: '{raw_response}'")
+                    continue
+                else:
+                    logger.error(f"Failed to parse response after {self.MAX_PARSING_RETRIES} attempts")
+                    raise ValueError(
+                        f"Could not parse valid guess from LLM response after {self.MAX_PARSING_RETRIES} attempts: {parse_error}")
+
+            logger.info(f"Extracted guess: {guess}")
+            if reasoning:
+                logger.info(f"LLM reasoning: {reasoning}")
+
+            # Attempt to make the guess in the game
+            try:
+                game_results = self.game.make_guess(guess, reasoning)
+
+                # Success! Log the result and return
+                GameRunner._log_guess_result(game_results)
+                return
+
+            except ValueError as game_error:
+                # Check if this is specifically an invalid word error
+                if "valid English word" in str(game_error):
+                    invalid_word_retries += 1
+                    self.invalid_word_attempts.append(guess)
+
+                    if invalid_word_retries <= self.MAX_INVALID_WORD_RETRIES:
+                        logger.warning(
+                            f"Invalid word '{guess}' (attempt {invalid_word_retries}/{self.MAX_INVALID_WORD_RETRIES}). Retrying...")
+                        continue
+                    else:
+                        logger.error(f"Failed to get valid word after {self.MAX_INVALID_WORD_RETRIES} attempts")
+                        raise ValueError(
+                            f"Could not get valid word from LLM after {self.MAX_INVALID_WORD_RETRIES} attempts. Last invalid word: {guess}")
+                else:
+                    # Some other ValueError from the game (format issues, etc.)
+                    raise game_error
+
+    def _generate_prompt(self) -> str:
+        """Generate prompt with feedback about invalid words (if needed)."""
         # Get the current game state for prompt
         game_state = self.game.get_game_state()
 
-        # Generate prompt
+        # Generate base prompt
         prompt = self.prompt_template.format_prompt(game_state)
 
-        # Get LLM response
-        logger.debug("Requesting LLM response...")
-        start_time = time.time()
-        raw_response = self.llm_client.generate_response(prompt)
-        response_time = time.time() - start_time
+        # Add invalid word feedback if we have any
+        # TODO: Clean this up
+        if self.invalid_word_attempts:
+            invalid_list = ", ".join(self.invalid_word_attempts)
+            feedback = f"\n\nIMPORTANT: The following words are not valid English words you've already tried, so don't use them: {invalid_list}\n\n"
 
-        logger.debug(f"LLM response time: {response_time:.2f}s")
-        logger.debug(f"Raw response: '{raw_response}'")
+            # Insert feedback before the final request (checking Simple and JSON prompts specifically)
+            if "Your next guess:" in prompt:
+                prompt = prompt.replace("Your next guess:", feedback + "Your next guess:")
+            elif "Your response:" in prompt:
+                prompt = prompt.replace("Your response:", feedback + "Your response:")
+            else:
+                prompt += feedback
 
-        # Parse the response
-        guess = self.response_parser.extract_guess(raw_response)
-        reasoning = self.response_parser.extract_reasoning(raw_response)
-
-        logger.info(f"Extracted guess: {guess}")
-        if reasoning:
-            logger.info(f"LLM reasoning: {reasoning}")
-
-        # Make the guess in the game
-        game_results = self.game.make_guess(guess, reasoning)
-
-        # Log the result
-        GameRunner._log_guess_result(game_results)
+        return prompt
 
     @staticmethod
     def _log_guess_result(result: dict[str, Any]) -> None:
@@ -155,7 +219,7 @@ class GameRunner:
 
         logger.info(f"Guess: {guess}")
         logger.info(f"Status: {status.upper()}")
-        logger.info(f"Remaining: {remaining}")
+        logger.info(f"Guesses Remaining: {remaining}")
 
         # Create the emoji feedback line
         feedback_line = ""
@@ -194,7 +258,9 @@ class GameRunner:
                 "duration_seconds": duration,
                 "start_time": self.start_time.isoformat(),
                 "end_time": end_time.isoformat(),
-                "date": self.date or datetime.now().strftime("%Y-%m-%d")
+                "date": self.date or datetime.now().strftime("%Y-%m-%d"),
+                "invalid_word_attempts": self.invalid_word_attempts,
+                "total_invalid_attempts": len(self.invalid_word_attempts)
             }
         }
 
@@ -215,7 +281,9 @@ class GameRunner:
                 "duration_seconds": duration,
                 "start_time": self.start_time.isoformat() if self.start_time else None,
                 "end_time": end_time.isoformat(),
-                "date": self.date or datetime.now().strftime("%Y-%m-%d")
+                "date": self.date or datetime.now().strftime("%Y-%m-%d"),
+                "invalid_word_attempts": self.invalid_word_attempts,
+                "total_invalid_attempts": len(self.invalid_word_attempts)
             }
         }
 
@@ -238,6 +306,11 @@ class GameRunner:
         for i, (guess, reasoning) in enumerate(zip(game_state["guesses"], game_state["guess_reasoning"])):
             reasoning_text = reasoning or "No reasoning"
             logger.info(f"  {i + 1}. {guess} - {reasoning_text}")
+
+        # Log invalid word attempts if any
+        if self.invalid_word_attempts:
+            logger.info(
+                f"Invalid words attempted: {', '.join(self.invalid_word_attempts)} ({len(self.invalid_word_attempts)} total)")
 
         logger.info("=" * 50)
 
