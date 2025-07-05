@@ -376,7 +376,7 @@ class TestGameRunnerRetryLogic:
         prompt = game_runner._generate_prompt()
 
         # Should contain feedback about invalid words
-        assert "not valid English words" in prompt
+        assert "NOTE: The following words you tried are not in the dictionary" in prompt
         assert "ZXXCV, QWERT" in prompt
 
     def test_prompt_feedback_no_invalid_words(self, game_runner):

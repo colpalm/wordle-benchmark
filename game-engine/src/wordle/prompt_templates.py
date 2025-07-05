@@ -58,6 +58,11 @@ class PromptTemplate(ABC):
 
         return prompt
 
+    @staticmethod
+    def insert_feedback(prompt: str, feedback: str) -> str:
+        """Insert feedback into prompt at a specific location - shared across all templates"""
+        return prompt + feedback # Default: append
+
 
 class SimplePromptTemplate(PromptTemplate):
     """Simple baseline prompt template with just the basic rules"""
@@ -120,6 +125,11 @@ class JsonPromptTemplate(PromptTemplate):
         """).strip()
 
         return prompt
+
+    def insert_feedback(self, prompt: str, feedback: str) -> str:
+        """Insert feedback into the prompt at a specific location"""
+        marker = "IMPORTANT: You must respond in valid JSON format"
+        return prompt.replace(marker, feedback + marker)
 
 
 class PromptTemplateFactory:

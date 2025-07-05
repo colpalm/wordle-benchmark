@@ -195,18 +195,11 @@ class GameRunner:
         prompt = self.prompt_template.format_prompt(game_state)
 
         # Add invalid word feedback if we have any
-        # TODO: Clean this up
         if self.invalid_word_attempts:
             invalid_list = ", ".join(self.invalid_word_attempts)
-            feedback = f"\n\nIMPORTANT: The following words are not valid English words you've already tried, so don't use them: {invalid_list}\n\n"
+            feedback = f"Invalid Guesses:\nNOTE: The following words you tried are not in the dictionary: {invalid_list}\n\n"
 
-            # Insert feedback before the final request (checking Simple and JSON prompts specifically)
-            if "Your next guess:" in prompt:
-                prompt = prompt.replace("Your next guess:", feedback + "Your next guess:")
-            elif "Your response:" in prompt:
-                prompt = prompt.replace("Your response:", feedback + "Your response:")
-            else:
-                prompt += feedback
+            prompt = self.prompt_template.insert_feedback(prompt, feedback)
 
         return prompt
 
