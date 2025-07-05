@@ -164,14 +164,14 @@ class TestGameRunnerIntegration:
             llm_client=llm_client,
             prompt_template=template,
             response_parser=parser,
-            target_word="CRANE"  # Common starting word, LLM might guess it
+            target_word="GLOBE"  # Common word
         )
 
         result = game_runner.run_complete_game()
 
         # Basic assertions - focused on LLM integration
         assert result["success"] is True
-        assert result["game_state"]["target_word"] == "CRANE"
+        assert result["game_state"]["target_word"] == "GLOBE"
         assert result["game_state"]["game_over"] is True
         assert 1 <= len(result["game_state"]["guesses"]) <= 6
 
