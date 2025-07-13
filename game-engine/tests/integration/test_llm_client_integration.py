@@ -23,8 +23,8 @@ class TestLLMClientIntegration:
         if not api_key:
             pytest.skip("OPENROUTER_API_KEY not set in environment")
 
-        # Use an inexpensive model for testing
-        client = OpenRouterClient(api_key=api_key, model="gpt-3.5-turbo")
+        # Use an inexpensive/free model for testing
+        client = OpenRouterClient(api_key=api_key, model="meta-llama/llama-3.3-70b-instruct:free")
 
         try:
             response = client.generate_response("Say exactly: HELLO")
@@ -50,7 +50,7 @@ class TestLLMClientIntegration:
         if not api_key:
             pytest.skip("OPENROUTER_API_KEY not set in environment")
 
-        client = OpenRouterClient(api_key=api_key, model="gpt-3.5-turbo")
+        client = OpenRouterClient(api_key=api_key, model="meta-llama/llama-3.3-70b-instruct:free")
 
         prompt = """You are playing Wordle. Guess a 5-letter word.
 
@@ -83,7 +83,7 @@ class TestLLMClientIntegration:
         WHEN I try to make an API call
         THEN I should get an authentication error
         """
-        client = OpenRouterClient(api_key="invalid-key", model="gpt-3.5-turbo")
+        client = OpenRouterClient(api_key="invalid-key", model="meta-llama/llama-3.3-70b-instruct:free")
 
         from llm_integration.llm_client import LLMAuthenticationError
 
