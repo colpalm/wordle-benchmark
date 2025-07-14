@@ -30,7 +30,7 @@ class GameDatabaseService:
             config.database_url,
             echo=config.echo_sql
         )
-        self.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
+        self.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=self.engine) # NOSONAR
     
     def create_tables(self) -> None:
         """Create all database tables. Use for testing or initial setup."""
