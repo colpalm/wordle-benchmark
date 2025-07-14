@@ -49,30 +49,36 @@ def word_list(temp_base_words_file, nonexistent_log_file):
     yield word_list
 
 
-class DatabaseTestConfig(DatabaseConfig):
-    """Test database configuration for pytest integration tests.
+@pytest.fixture
+def db_config():
+    """Database configuration fixture for integration tests."""
     
-    Uses TestContainers to manage ephemeral PostgreSQL instances
-    for test isolation and clean state.
-    """
-    
-    def __init__(self, database_url: Optional[str] = None):
-        self._database_url = database_url
-    
-    @property
-    def database_url(self) -> str:
-        if self._database_url:
-            return self._database_url
+    class DatabaseTestConfig(DatabaseConfig):
+        """Test database configuration for pytest integration tests.
         
-        # For pytest integration tests, this will be set by postgresql fixtures
-        url = os.getenv('TEST_DATABASE_URL')
-        if not url:
-            raise ValueError(
-                "TEST_DATABASE_URL must be set by postgresql fixture for integration tests"
-            )
+        Uses TestContainers to manage ephemeral PostgreSQL instances
+        for test isolation and clean state.
+        """
         
-        return url
+        def __init__(self, database_url: Optional[str] = None):
+            self._database_url = database_url
+        
+        @property
+        def database_url(self) -> str:
+            if self._database_url:
+                return self._database_url
+            
+            # For pytest integration tests, this will be set by postgresql fixtures
+            url = os.getenv('TEST_DATABASE_URL')
+            if not url:
+                raise ValueError(
+                    "TEST_DATABASE_URL must be set by postgresql fixture for integration tests"
+                )
+            
+            return url
+        
+        @property
+        def echo_sql(self) -> bool:
+            return os.getenv('TEST_DB_ECHO_SQL', 'false').lower() == 'true'
     
-    @property
-    def echo_sql(self) -> bool:
-        return os.getenv('TEST_DB_ECHO_SQL', 'false').lower() == 'true'
+    return DatabaseTestConfig()
