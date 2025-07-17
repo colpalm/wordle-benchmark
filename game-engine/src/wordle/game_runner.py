@@ -9,7 +9,7 @@ from llm_integration.llm_client import LLMClient
 from llm_integration.openrouter_client import OpenRouterClient
 from utils.logging_config import get_logger
 from wordle.enums import GameStatus, LetterStatus
-from wordle.models import GameResult, GameState, GameMetadata, LetterResult
+from wordle.models import GameResult, GameState, GameMetadata, LetterResult, UsageStats
 from wordle.prompt_templates import PromptTemplate, PromptTemplateFactory
 from wordle.response_parser import ResponseParser, ResponseParserFactory
 from wordle.word_list import WordList
@@ -156,15 +156,30 @@ class GameRunner:
     
     def _initialize_interaction_data(self, prompt: str, raw_response: str) -> None:
         """Initialize interaction data for database persistence."""
-        # Get usage stats and add additional fields for database
-        interaction_data = self.llm_client.get_current_usage_stats()
-        interaction_data.update({
-            "prompt_text": prompt,
-            "raw_response": raw_response
-        })
+        # Get usage stats from LLM client as raw dict
+        raw_usage_stats = self.llm_client.get_current_usage_stats()
         
-        # Store for completion after parsing
-        self._current_interaction = interaction_data
+        # Convert to type-safe UsageStats model for validation
+        usage_stats = UsageStats(
+            total_requests=1,  # This represents one API call
+            total_tokens_input=raw_usage_stats.get("prompt_tokens", 0),
+            total_tokens_output=raw_usage_stats.get("completion_tokens", 0),
+            total_tokens_reasoning=raw_usage_stats.get("reasoning_tokens", 0),
+            total_cost_usd=raw_usage_stats.get("cost_usd", 0.0),
+            response_time_avg_ms=raw_usage_stats.get("response_time_ms", 0.0)
+        )
+        
+        # Convert back to dict format for LLMInteraction storage
+        self._current_interaction = {
+            "prompt_text": prompt,
+            "raw_response": raw_response,
+            "prompt_tokens": usage_stats.total_tokens_input,
+            "completion_tokens": usage_stats.total_tokens_output,
+            "reasoning_tokens": usage_stats.total_tokens_reasoning,
+            "total_tokens": raw_usage_stats.get("total_tokens", 0),
+            "cost_usd": usage_stats.total_cost_usd,
+            "response_time_ms": usage_stats.response_time_avg_ms
+        }
 
     def _generate_prompt(self) -> str:
         """Generate prompt with feedback about invalid words (if needed)."""

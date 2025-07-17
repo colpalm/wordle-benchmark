@@ -151,8 +151,7 @@ class TestGameMetadata:
             end_time=end_time,
             date="2024-01-01",
             invalid_word_attempts=["XXXXX"],
-            total_invalid_attempts=1,
-            usage_stats=UsageStats(total_requests=5)
+            total_invalid_attempts=1
         )
         
         assert metadata.model == "gpt-4o-mini"
@@ -164,7 +163,6 @@ class TestGameMetadata:
         assert metadata.date == "2024-01-01"
         assert metadata.invalid_word_attempts == ["XXXXX"]
         assert metadata.total_invalid_attempts == 1
-        assert metadata.usage_stats.total_requests == 5
 
     def test_invalid_duration(self):
         with pytest.raises(ValidationError):
@@ -203,7 +201,6 @@ class TestGameMetadata:
         )
         assert metadata.invalid_word_attempts == []
         assert metadata.total_invalid_attempts == 0
-        assert metadata.usage_stats is None
 
 
 class TestGameResult:
@@ -397,8 +394,7 @@ class TestModelSerialization:
             end_time=end_time,
             date="2024-01-01",
             invalid_word_attempts=["XXXXX"],
-            total_invalid_attempts=1,
-            usage_stats=UsageStats(total_requests=5)
+            total_invalid_attempts=1
         )
         
         json_data = metadata.model_dump()
@@ -409,7 +405,6 @@ class TestModelSerialization:
         assert json_data["date"] == "2024-01-01"
         assert json_data["invalid_word_attempts"] == ["XXXXX"]
         assert json_data["total_invalid_attempts"] == 1
-        assert json_data["usage_stats"]["total_requests"] == 5
         
         reconstructed = GameMetadata.model_validate(json_data)
         assert reconstructed == metadata
@@ -453,14 +448,7 @@ class TestModelSerialization:
             duration_seconds=300.0,
             start_time=start_time,
             end_time=end_time,
-            date="2024-01-01",
-            usage_stats=UsageStats(
-                total_requests=2,
-                total_tokens_input=200,
-                total_tokens_output=20,
-                total_cost_usd=0.01,
-                response_time_avg_ms=150.0
-            )
+            date="2024-01-01"
         )
         
         result = GameResult(
@@ -476,7 +464,6 @@ class TestModelSerialization:
         assert json_data["game_state"]["target_word"] == "HELLO"
         assert json_data["game_state"]["won"] is True
         assert json_data["metadata"]["model"] == "gpt-4o-mini"
-        assert json_data["metadata"]["usage_stats"]["total_requests"] == 2
         
         # Test deserialization
         reconstructed = GameResult.model_validate(json_data)

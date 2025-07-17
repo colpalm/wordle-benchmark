@@ -121,7 +121,6 @@ class GameMetadata(BaseModel):
     date: str  # YYYY-MM-DD format
     invalid_word_attempts: List[str] = Field(default_factory=list)
     total_invalid_attempts: int = Field(ge=0, default=0)
-    usage_stats: Optional[UsageStats] = None
 
 
 class GameResult(BaseModel):
