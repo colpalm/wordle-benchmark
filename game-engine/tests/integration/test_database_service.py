@@ -103,7 +103,7 @@ class TestGameDatabaseService:
                 total_tokens_input=100,
                 total_tokens_output=50,
                 total_cost_usd=0.01,
-                response_time_avg_ms=1200.0
+                response_time_ms=1200.0
             )
         )
         

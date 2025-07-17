@@ -119,19 +119,19 @@ class TestUsageStats:
         assert stats.total_tokens_input == 0
         assert stats.total_tokens_output == 0
         assert stats.total_cost_usd == pytest.approx(0.0)
-        assert stats.response_time_avg_ms == pytest.approx(0.0)
+        assert stats.response_time_ms == pytest.approx(0.0)
 
     def test_custom_usage_stats(self):
         stats = UsageStats(
             total_tokens_input=100,
             total_tokens_output=50,
             total_cost_usd=0.02,
-            response_time_avg_ms=250.5
+            response_time_ms=250.5
         )
         assert stats.total_tokens_input == 100
         assert stats.total_tokens_output == 50
         assert stats.total_cost_usd == pytest.approx(0.02)
-        assert stats.response_time_avg_ms == pytest.approx(250.5)
+        assert stats.response_time_ms == pytest.approx(250.5)
 
 
 class TestGameMetadata:
@@ -361,7 +361,7 @@ class TestModelSerialization:
             total_tokens_input=100,
             total_tokens_output=50,
             total_cost_usd=0.02,
-            response_time_avg_ms=250.5
+            response_time_ms=250.5
         )
         
         json_data = stats.model_dump()
@@ -370,7 +370,7 @@ class TestModelSerialization:
             "total_tokens_output": 50,
             "total_tokens_reasoning": 0,
             "total_cost_usd": 0.02,
-            "response_time_avg_ms": 250.5
+            "response_time_ms": 250.5
         }
         
         reconstructed = UsageStats.model_validate(json_data)

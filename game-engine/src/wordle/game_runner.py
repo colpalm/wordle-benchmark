@@ -165,7 +165,7 @@ class GameRunner:
             total_tokens_output=raw_usage_stats.get("completion_tokens", 0),
             total_tokens_reasoning=raw_usage_stats.get("reasoning_tokens", 0),
             total_cost_usd=raw_usage_stats.get("cost_usd", 0.0),
-            response_time_avg_ms=raw_usage_stats.get("response_time_ms", 0.0)
+            response_time_ms=raw_usage_stats.get("response_time_ms", 0.0)
         )
         
         # Convert back to dict format for LLMInteraction storage
@@ -177,7 +177,7 @@ class GameRunner:
             "reasoning_tokens": usage_stats.total_tokens_reasoning,
             "total_tokens": raw_usage_stats.get("total_tokens", 0),
             "cost_usd": usage_stats.total_cost_usd,
-            "response_time_ms": usage_stats.response_time_avg_ms
+            "response_time_ms": usage_stats.response_time_ms
         }
 
     def _generate_prompt(self) -> str:

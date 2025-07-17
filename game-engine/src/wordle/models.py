@@ -107,7 +107,7 @@ class UsageStats(BaseModel):
     total_tokens_output: int = 0
     total_tokens_reasoning: int = 0
     total_cost_usd: float = 0.0
-    response_time_avg_ms: float = 0.0
+    response_time_ms: float = 0.0
 
 
 class GameMetadata(BaseModel):
