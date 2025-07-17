@@ -39,6 +39,16 @@ class LLMClient(ABC):
         """
         pass
 
+    @abstractmethod
+    def get_current_usage_stats(self) -> dict[str, Any]:
+        """
+        Get usage statistics from the most recent API call.
+
+        Returns:
+            Dictionary containing usage statistics like token counts, cost, response time
+        """
+        pass
+
 class LLMError(Exception):
     """Base exception for LLM-related errors."""
     pass

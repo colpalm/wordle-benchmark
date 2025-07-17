@@ -135,6 +135,7 @@ class GameRunner:
             logger.debug(f"Generated prompt:\n{prompt}")
 
             raw_response = self._get_llm_response(prompt)
+            self._initialize_interaction_data(prompt, raw_response)
 
             # Try to parse the response
             guess, reasoning = self._try_parse_with_retry(raw_response, attempt_state)
@@ -147,11 +148,14 @@ class GameRunner:
                 return
 
     def _get_llm_response(self, prompt: str) -> str:
-        """Get response from LLM and capture interaction data."""
+        """Get response from LLM."""
         logger.debug("Requesting LLM response...")
         raw_response = self.llm_client.generate_response(prompt)
         logger.debug(f"Raw response: '{raw_response}'")
-        
+        return raw_response
+    
+    def _initialize_interaction_data(self, prompt: str, raw_response: str) -> None:
+        """Initialize interaction data for database persistence."""
         # Get usage stats and add additional fields for database
         interaction_data = self.llm_client.get_current_usage_stats()
         interaction_data.update({
@@ -161,8 +165,6 @@ class GameRunner:
         
         # Store for completion after parsing
         self._current_interaction = interaction_data
-        
-        return raw_response
 
     def _generate_prompt(self) -> str:
         """Generate prompt with feedback about invalid words (if needed)."""
