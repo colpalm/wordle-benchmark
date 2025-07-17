@@ -1,7 +1,88 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, date
+from decimal import Decimal
 from wordle.enums import LetterStatus, GameStatus
+import uuid
+
+
+## Database-aligned Pydantic models for SQLAlchemy entities ##
+
+class Game(BaseModel):
+    """Pydantic model matching Game SQLAlchemy table."""
+    id: Optional[uuid.UUID] = None
+    model_name: str = Field(max_length=100)
+    template_name: str = Field(max_length=20)
+    parser_name: str = Field(max_length=20)
+    target_word: str = Field(min_length=5, max_length=5)
+    date: date
+    status: str = Field(max_length=20)  # "won", "lost"
+    guesses_count: int = Field(ge=0, le=6)
+    won: bool
+    duration_seconds: float = Field(ge=0)
+    total_invalid_attempts: int = Field(ge=0, default=0)
+    created_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+
+
+class GameTurn(BaseModel):
+    """Pydantic model matching GameTurn SQLAlchemy table."""
+    id: Optional[uuid.UUID] = None
+    game_id: uuid.UUID
+    turn_number: int = Field(ge=1, le=6)
+    guess: str = Field(min_length=5, max_length=5)
+    reasoning: Optional[str] = None
+    is_correct: bool
+    letter_results: List[dict]  # Letter-by-letter feedback
+    created_at: Optional[datetime] = None
+
+
+class LLMInteraction(BaseModel):
+    """Pydantic model matching LLMInteraction SQLAlchemy table."""
+    id: Optional[uuid.UUID] = None
+    game_id: uuid.UUID
+    turn_number: int = Field(ge=1, le=6)
+    prompt_text: str
+    raw_response: str
+    parse_success: bool
+    parse_error_message: Optional[str] = None
+    extraction_method: Optional[str] = None
+    attempt_number: int = Field(ge=1)
+    response_time_ms: Optional[int] = None
+
+    # Usage tracking fields
+    prompt_tokens: Optional[int] = None
+    completion_tokens: Optional[int] = None
+    reasoning_tokens: Optional[int] = None
+    total_tokens: Optional[int] = None
+    cost_usd: Optional[Decimal] = None
+
+    created_at: Optional[datetime] = None
+
+
+class InvalidWordAttempt(BaseModel):
+    """Pydantic model matching InvalidWordAttempt SQLAlchemy table."""
+    id: Optional[uuid.UUID] = None
+    game_id: uuid.UUID
+    turn_number: int = Field(ge=1, le=6)
+    attempted_word: str = Field(min_length=5, max_length=5)
+    attempt_number: int = Field(ge=1)
+    created_at: Optional[datetime] = None
+
+
+class GameUsageSummary(BaseModel):
+    """Pydantic model matching GameUsageSummary SQLAlchemy view."""
+    game_id: uuid.UUID
+    total_tokens_input: Optional[int] = None
+    total_tokens_output: Optional[int] = None
+    total_tokens_reasoning: Optional[int] = None
+    total_tokens_all: Optional[int] = None
+    cost_usd: Optional[Decimal] = None
+    response_time_avg_ms: Optional[float] = None
+    total_requests: int
+
+
+## Runtime Pydantic models ##
 
 
 class LetterResult(BaseModel):

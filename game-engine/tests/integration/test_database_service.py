@@ -129,7 +129,6 @@ class TestGameDatabaseService:
         assert saved_game.won is True
         assert saved_game.guesses_count == 2
         assert saved_game.status == "won"
-        assert saved_game.game_metadata == {}
     
     def test_save_game_with_invalid_attempts(self, db_service):
         """Test saving a game with invalid word attempts."""

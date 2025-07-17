@@ -163,9 +163,6 @@ class GameDatabaseService:
         # Parse date string to date object
         game_date = datetime.strptime(metadata.date, "%Y-%m-%d").date()
         
-        # Prepare metadata JSON (excluding fields that have dedicated columns)
-        metadata_json = {}
-        
         return Game(
             model_name=metadata.model,
             template_name=metadata.template,
@@ -177,7 +174,6 @@ class GameDatabaseService:
             won=game_state.won,
             duration_seconds=metadata.duration_seconds,
             total_invalid_attempts=metadata.total_invalid_attempts,
-            game_metadata=metadata_json,
             created_at=datetime.now(UTC),
             completed_at=metadata.end_time
         )

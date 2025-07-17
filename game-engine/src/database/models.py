@@ -33,7 +33,6 @@ class Game(Base):
     won: Mapped[bool] = mapped_column(Boolean)
     duration_seconds: Mapped[float] = mapped_column(Float)
     total_invalid_attempts: Mapped[int] = mapped_column(Integer, default=0)
-    game_metadata: Mapped[Optional[dict]] = mapped_column(JSONB)  # API costs, tokens, performance
     created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
     
