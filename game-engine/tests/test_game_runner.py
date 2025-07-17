@@ -89,9 +89,9 @@ class TestGameRunner:
         with patch.object(llm_client, 'generate_response', side_effect=json_responses):
             result = game_runner.run_complete_game()
 
-        assert result["game_state"]["won"] is True
-        assert result["game_state"]["guesses"] == ["STARE", "CRANE"]
-        assert len(result["game_state"]["guess_reasoning"]) == 2
+        assert result.game_state.won is True
+        assert result.game_state.guesses == ["STARE", "CRANE"]
+        assert len(result.game_state.guess_reasoning) == 2
 
     def test_complete_losing_game(self, game_runner, llm_client):
         """
@@ -112,15 +112,15 @@ class TestGameRunner:
         with patch.object(llm_client, 'generate_response', side_effect=json_responses):
             result = game_runner.run_complete_game()
 
-        assert result["game_state"]["won"] is False
-        assert result["game_state"]["game_over"] is True
-        assert result["game_state"]["status"] == "lost"
-        assert result["game_state"]["guesses_made"] == 6
-        assert result["game_state"]["guesses_remaining"] == 0
-        assert result["game_state"]["target_word"] == "CRANE"
-        assert result["game_state"]["guesses"] == ["STARE", "LIGHT", "MOUND", "FIFTY", "BUMPS", "GHOST"]
-        assert len(result["game_state"]["guess_reasoning"]) == 6
-        assert result["success"] is True
+        assert result.game_state.won is False
+        assert result.game_state.game_over is True
+        assert result.game_state.status == "lost"
+        assert result.game_state.guesses_made == 6
+        assert result.game_state.guesses_remaining == 0
+        assert result.game_state.target_word == "CRANE"
+        assert result.game_state.guesses == ["STARE", "LIGHT", "MOUND", "FIFTY", "BUMPS", "GHOST"]
+        assert len(result.game_state.guess_reasoning) == 6
+        assert result.success is True
 
     def test_make_guess_attempt_llm_failure(self, game_runner, llm_client):
         """Test LLM failure handling during guess attempt."""
@@ -157,14 +157,14 @@ class TestGameRunner:
                 result = game_runner._create_result()
 
         # Then the result should contain real game data
-        assert result["success"] is True
-        assert result["game_state"]["won"] is True
-        assert result["game_state"]["target_word"] == "CRANE"
-        assert result["game_state"]["guesses"] == ["CRANE"]
-        assert result["metadata"]["model"] == "test-model"
-        assert result["metadata"]["template"] == "json"
-        assert result["metadata"]["parser"] == "json"
-        assert result["metadata"]["duration_seconds"] == pytest.approx(30.0)
+        assert result.success is True
+        assert result.game_state.won is True
+        assert result.game_state.target_word == "CRANE"
+        assert result.game_state.guesses == ["CRANE"]
+        assert result.metadata.model == "test-model"
+        assert result.metadata.template == "json"
+        assert result.metadata.parser == "json"
+        assert result.metadata.duration_seconds == pytest.approx(30.0)
 
     def test_create_result_not_initialized(self, game_runner):
         """Test result creation when the game is not properly initialized."""
@@ -176,8 +176,8 @@ class TestGameRunner:
         result = game_runner._create_result()
 
         # Then it should return an error result
-        assert result["success"] is False
-        assert result["error"] == "Game not properly initialized"
+        assert result.success is False
+        assert result.error == "Game not properly initialized"
 
     def test_create_error_result(self, game_runner):
         """Test error result creation."""
@@ -191,12 +191,12 @@ class TestGameRunner:
             result = game_runner._create_error_result("Something went wrong")
 
         # Then the error result should be properly formatted
-        assert result["success"] is False
-        assert result["error"] == "Something went wrong"
-        assert result["metadata"]["model"] == "test-model"
-        assert result["metadata"]["template"] == "json"
-        assert result["metadata"]["parser"] == "json"
-        assert result["metadata"]["duration_seconds"] == pytest.approx(15.0)
+        assert result.success is False
+        assert result.error == "Something went wrong"
+        assert result.metadata.model == "test-model"
+        assert result.metadata.template == "json"
+        assert result.metadata.parser == "json"
+        assert result.metadata.duration_seconds == pytest.approx(15.0)
 
 
 class TestGameRunnerRetryLogic:
@@ -412,11 +412,11 @@ class TestGameRunnerRetryLogic:
             result = game_runner.run_complete_game()
 
         # Should have completed successfully
-        assert result["success"] is True
-        assert result["game_state"]["won"] is True
+        assert result.success is True
+        assert result.game_state.won is True
 
         # Should track invalid attempts in metadata
-        assert "invalid_word_attempts" in result["metadata"]
-        assert "total_invalid_attempts" in result["metadata"]
-        assert result["metadata"]["invalid_word_attempts"] == ["ZXXCV"]
-        assert result["metadata"]["total_invalid_attempts"] == 1
+        assert hasattr(result.metadata, 'invalid_word_attempts')
+        assert hasattr(result.metadata, 'total_invalid_attempts')
+        assert result.metadata.invalid_word_attempts == ["ZXXCV"]
+        assert result.metadata.total_invalid_attempts == 1

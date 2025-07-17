@@ -42,6 +42,14 @@ class OpenRouterClient(LLMClient):
         self.api_key = api_key
         self.model = model
         self.timeout = timeout or self.DEFAULT_TIMEOUT
+        
+        # Usage tracking for current call
+        self._last_prompt_tokens = 0
+        self._last_completion_tokens = 0
+        self._last_reasoning_tokens = 0
+        self._last_total_tokens = 0
+        self._last_cost_usd = 0.0
+        self._last_response_time_ms = 0.0
 
     def generate_response(self, prompt: str) -> str:
         """
@@ -61,6 +69,7 @@ class OpenRouterClient(LLMClient):
             LLMError: For other API errors
         """
         payload = self._build_request_payload(prompt)
+        start_time = time.time()
 
         for attempt in range(self.MAX_RETRIES):
             logger.debug(f"Making API request to {self.model} (attempt {attempt + 1}/{self.MAX_RETRIES})")
@@ -73,8 +82,14 @@ class OpenRouterClient(LLMClient):
                     continue  # Rate limit handled, try again
 
                 # Successfully got a good response
-                content = self._extract_content_from_response(response)
+                content, usage_data = self._extract_content_and_usage_from_response(response)
+                response_time = time.time() - start_time
+                
+                # Track usage statistics
+                self._update_usage_stats(usage_data, response_time)
+                
                 logger.debug(f"Successfully received response from {self.model}")
+                logger.debug(f"LLM response time: {response_time:.2f}s")
                 return content.strip()
 
             except (LLMAuthenticationError, LLMQuotaExceededError):
@@ -160,8 +175,8 @@ class OpenRouterClient(LLMClient):
         time.sleep(wait_time)
 
     @staticmethod
-    def _extract_content_from_response(response: requests.Response) -> str:
-        """Extract and validate content from API response"""
+    def _extract_content_and_usage_from_response(response: requests.Response) -> tuple[str, dict]:
+        """Extract and validate content and usage data from API response"""
         # Parse the response JSON
         try:
             data = response.json()
@@ -173,7 +188,11 @@ class OpenRouterClient(LLMClient):
             content = data["choices"][0]["message"]["content"]
             if not content:
                 raise LLMError("Empty response from API")
-            return content
+                
+            # Extract usage data (may be missing in some responses)
+            usage_data = data.get("usage", {})
+            
+            return content, usage_data
         except (KeyError, IndexError) as e:
             raise LLMError(f"Unexpected API response structure: {e}")
 
@@ -194,3 +213,39 @@ class OpenRouterClient(LLMClient):
         Return the configured model name
         """
         return self.model
+
+    def _update_usage_stats(self, usage_data: dict, response_time: float) -> None:
+        """Update usage statistics for the current API call"""
+        # Store individual call data (not accumulated)
+        self._last_response_time_ms = response_time * 1000  # Convert to ms
+        
+        # Extract token counts from usage data (if available)
+        if usage_data:
+            self._last_prompt_tokens = usage_data.get("prompt_tokens", 0)
+            self._last_completion_tokens = usage_data.get("completion_tokens", 0)
+            self._last_reasoning_tokens = usage_data.get("reasoning_tokens", 0)
+            self._last_total_tokens = usage_data.get("total_tokens", 0)
+            
+            # Calculate cost for this call (basic implementation)
+            total_tokens = usage_data.get("total_tokens", 0)
+            # Rough estimate: $0.001 per 1K tokens (varies by model)
+            # TODO: Implement actual logic for each model
+            self._last_cost_usd = (total_tokens / 1000) * 0.001
+        else:
+            # Reset if no usage data available
+            self._last_prompt_tokens = 0
+            self._last_completion_tokens = 0
+            self._last_reasoning_tokens = 0
+            self._last_total_tokens = 0
+            self._last_cost_usd = 0.0
+    
+    def get_last_call_usage(self) -> dict:
+        """Get usage data from the most recent API call"""
+        return {
+            "prompt_tokens": self._last_prompt_tokens,
+            "completion_tokens": self._last_completion_tokens,
+            "reasoning_tokens": self._last_reasoning_tokens,
+            "total_tokens": self._last_total_tokens,
+            "cost_usd": self._last_cost_usd,
+            "response_time_ms": self._last_response_time_ms
+        }

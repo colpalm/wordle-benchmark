@@ -1,6 +1,6 @@
 """SQLAlchemy database models for Wordle benchmark system."""
 
-from sqlalchemy import String, Integer, Float, Boolean, DateTime, Text, ForeignKey, Date, Index
+from sqlalchemy import String, Integer, Float, Boolean, DateTime, Text, ForeignKey, Date, Index, Numeric
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
@@ -74,6 +74,14 @@ class LLMInteraction(Base):
     extraction_method: Mapped[Optional[str]] = mapped_column(String(50))  # "quoted", "capitalized", etc.
     retry_attempt: Mapped[int] = mapped_column(Integer)  # Which retry (1st, 2nd, etc.)
     response_time_ms: Mapped[Optional[int]] = mapped_column(Integer)  # LLM response time
+    
+    # Usage tracking fields
+    prompt_tokens: Mapped[Optional[int]] = mapped_column(Integer)
+    completion_tokens: Mapped[Optional[int]] = mapped_column(Integer)
+    reasoning_tokens: Mapped[Optional[int]] = mapped_column(Integer)
+    total_tokens: Mapped[Optional[int]] = mapped_column(Integer)
+    cost_usd: Mapped[Optional[float]] = mapped_column(Numeric(10, 6))
+    
     created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
     
     # Relationships
@@ -93,6 +101,21 @@ class InvalidWordAttempt(Base):
     
     # Relationships
     game: Mapped["Game"] = relationship(back_populates="invalid_attempts")
+
+
+class GameUsageSummary(Base):
+    """Database view for aggregated usage statistics per game."""
+    __tablename__ = 'game_usage_summary'
+    __table_args__ = {'info': {'is_view': True}}
+    
+    game_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    total_tokens_input: Mapped[Optional[int]] = mapped_column(Integer)
+    total_tokens_output: Mapped[Optional[int]] = mapped_column(Integer)
+    total_tokens_reasoning: Mapped[Optional[int]] = mapped_column(Integer)
+    total_tokens_all: Mapped[Optional[int]] = mapped_column(Integer)
+    total_cost_usd: Mapped[Optional[float]] = mapped_column(Numeric(10, 6))
+    response_time_avg_ms: Mapped[Optional[float]] = mapped_column(Float)
+    total_requests: Mapped[int] = mapped_column(Integer)
 
 
 # Production optimized indexes

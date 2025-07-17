@@ -376,6 +376,7 @@ class TestModelSerialization:
             "total_requests": 5,
             "total_tokens_input": 100,
             "total_tokens_output": 50,
+            "total_tokens_reasoning": 0,
             "total_cost_usd": 0.02,
             "response_time_avg_ms": 250.5
         }

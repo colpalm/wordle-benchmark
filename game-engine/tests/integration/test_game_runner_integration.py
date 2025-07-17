@@ -92,59 +92,59 @@ class TestGameRunnerIntegration:
         result = game_runner.run_complete_game()
 
         # Assert successful completion
-        assert result["success"] is True, f"Game failed: {result.get('error', 'Unknown error')}"
+        assert result.success is True, f"Game failed: {result.error or 'Unknown error'}"
 
         # Assert game structure
-        game_state = result["game_state"]
-        assert game_state["game_over"] is True
-        assert game_state["target_word"] is not None
-        assert len(game_state["target_word"]) == 5
-        assert game_state["target_word"].isalpha()
-        assert game_state["target_word"].isupper()
+        game_state = result.game_state
+        assert game_state.game_over is True
+        assert game_state.target_word is not None
+        assert len(game_state.target_word) == 5
+        assert game_state.target_word.isalpha()
+        assert game_state.target_word.isupper()
 
         # Assert a valid number of guesses
-        assert 1 <= len(game_state["guesses"]) <= 6
-        assert game_state["guesses_made"] == len(game_state["guesses"])
-        assert game_state["guesses_remaining"] == 6 - len(game_state["guesses"])
+        assert 1 <= len(game_state.guesses) <= 6
+        assert game_state.guesses_made == len(game_state.guesses)
+        assert game_state.guesses_remaining == 6 - len(game_state.guesses)
 
         # Assert all guesses are valid format
-        for guess in game_state["guesses"]:
+        for guess in game_state.guesses:
             assert len(guess) == 5
             assert guess.isalpha()
             assert guess.isupper()
 
         # Assert reasoning was captured for all guesses
-        assert len(game_state["guess_reasoning"]) == len(game_state["guesses"])
-        assert all(reasoning is not None for reasoning in game_state["guess_reasoning"])
-        assert all(isinstance(reasoning, str) for reasoning in game_state["guess_reasoning"])
-        assert all(len(reasoning.strip()) > 0 for reasoning in game_state["guess_reasoning"])
+        assert len(game_state.guess_reasoning) == len(game_state.guesses)
+        assert all(reasoning is not None for reasoning in game_state.guess_reasoning)
+        assert all(isinstance(reasoning, str) for reasoning in game_state.guess_reasoning)
+        assert all(len(reasoning.strip()) > 0 for reasoning in game_state.guess_reasoning)
 
         # Assert guess results structure
-        assert len(game_state["guess_results"]) == len(game_state["guesses"])
-        for guess_result in game_state["guess_results"]:
+        assert len(game_state.guess_results) == len(game_state.guesses)
+        for guess_result in game_state.guess_results:
             assert len(guess_result) == 5  # 5 letters per guess
             for letter_result in guess_result:
-                assert "letter" in letter_result
-                assert "position" in letter_result
-                assert "status" in letter_result
-                assert letter_result["status"] in [status.value for status in LetterStatus]
+                assert letter_result.letter is not None
+                assert letter_result.position is not None
+                assert letter_result.status is not None
+                assert letter_result.status in list(LetterStatus)
 
         # Assert metadata
-        metadata = result["metadata"]
-        assert metadata["model"] == llm_client.get_model_name()
-        assert metadata["template"] == template.get_template_name()
-        assert metadata["parser"] == parser.get_parser_name()
-        assert metadata["date"] == test_date
-        assert metadata["duration_seconds"] > 0
-        assert metadata["start_time"] is not None
-        assert metadata["end_time"] is not None
+        metadata = result.metadata
+        assert metadata.model == llm_client.get_model_name()
+        assert metadata.template == template.get_template_name()
+        assert metadata.parser == parser.get_parser_name()
+        assert metadata.date == test_date
+        assert metadata.duration_seconds > 0
+        assert metadata.start_time is not None
+        assert metadata.end_time is not None
 
         # Log final results for debugging
-        outcome = "WON" if game_state["won"] else "LOST"
+        outcome = "WON" if game_state.won else "LOST"
         logger.info(f"🎯 Integration test completed: {outcome}")
-        logger.info(f"Target word was: {game_state['target_word']}")
-        logger.info(f"Completed in {len(game_state['guesses'])}/{6} guesses")
-        logger.info(f"Duration: {metadata['duration_seconds']:.1f}s")
+        logger.info(f"Target word was: {game_state.target_word}")
+        logger.info(f"Completed in {len(game_state.guesses)}/{6} guesses")
+        logger.info(f"Duration: {metadata.duration_seconds:.1f}s")
 
         logger.info("✅ End-to-end integration test PASSED")
 
@@ -170,10 +170,10 @@ class TestGameRunnerIntegration:
         result = game_runner.run_complete_game()
 
         # Basic assertions - focused on LLM integration
-        assert result["success"] is True
-        assert result["game_state"]["target_word"] == "GLOBE"
-        assert result["game_state"]["game_over"] is True
-        assert 1 <= len(result["game_state"]["guesses"]) <= 6
+        assert result.success is True
+        assert result.game_state.target_word == "GLOBE"
+        assert result.game_state.game_over is True
+        assert 1 <= len(result.game_state.guesses) <= 6
 
-        outcome = "WON" if result["game_state"]["won"] else "LOST"
-        logger.info(f"🎯 Custom target test completed: {outcome} with {len(result['game_state']['guesses'])} guesses")
+        outcome = "WON" if result.game_state.won else "LOST"
+        logger.info(f"🎯 Custom target test completed: {outcome} with {len(result.game_state.guesses)} guesses")

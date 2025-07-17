@@ -1,14 +1,15 @@
 import os
 import sys
-import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
 
+from database.service import GameDatabaseService
 from llm_integration.llm_client import LLMClient
 from llm_integration.openrouter_client import OpenRouterClient
 from utils.logging_config import get_logger
-from wordle.enums import GameStatus
+from wordle.enums import GameStatus, LetterStatus
+from wordle.models import GameResult, GameState, GameMetadata, LetterResult
 from wordle.prompt_templates import PromptTemplate, PromptTemplateFactory
 from wordle.response_parser import ResponseParser, ResponseParserFactory
 from wordle.word_list import WordList
@@ -39,7 +40,8 @@ class GameRunner:
             prompt_template: PromptTemplate,
             response_parser: ResponseParser,
             target_word: Optional[str] = None,
-            date: Optional[str] = None
+            date: Optional[str] = None,
+            db_service: Optional[GameDatabaseService] = None
     ):
         """
         Initialize GameRunner with required components.
@@ -51,6 +53,7 @@ class GameRunner:
             response_parser: Parser for extracting guesses from LLM responses
             target_word: Specific target word (if None, fetches from NYT API)
             date: Date for word fetch (if None, uses today)
+            db_service: Optional database service for persisting results
         """
         self.word_list = word_list
         self.llm_client = llm_client
@@ -58,6 +61,7 @@ class GameRunner:
         self.response_parser = response_parser
         self.target_word = target_word
         self.date = date
+        self.db_service = db_service
 
         # Game state
         self.game: WordleGame | None = None
@@ -66,12 +70,12 @@ class GameRunner:
         # Track retry information for this game session (all invalid words tried)
         self.invalid_word_attempts: list[str] = []
 
-    def run_complete_game(self) -> dict[str, Any]:
+    def run_complete_game(self) -> GameResult:
         """
         Run a complete Wordle game from start to finish.
 
         Returns:
-            Dictionary with game results and metadata
+            GameResult with game state and metadata
         """
         logger.info("Starting Wordle game")
         logger.info(f"Model: {self.llm_client.get_model_name()}")
@@ -140,15 +144,10 @@ class GameRunner:
                 return
 
     def _get_llm_response(self, prompt: str) -> str:
-        """Get response from LLM with logging."""
+        """Get response from LLM."""
         logger.debug("Requesting LLM response...")
-        start_time = time.time()
         raw_response = self.llm_client.generate_response(prompt)
-        response_time = time.time() - start_time
-
-        logger.debug(f"LLM response time: {response_time:.2f}s")
         logger.debug(f"Raw response: '{raw_response}'")
-
         return raw_response
 
     def _generate_prompt(self) -> str:
@@ -278,56 +277,109 @@ class GameRunner:
 
         logger.info(f"Result: {feedback_line}")
 
-    def _create_result(self) -> dict[str, Any]:
+    def _create_result(self) -> GameResult:
         """Create the final game result."""
         if not self.game or not self.start_time:
             return self._create_error_result("Game not properly initialized")
 
         end_time = datetime.now()
         duration = (end_time - self.start_time).total_seconds()
-        game_state = self.game.get_game_state()
+        game_state_dict = self.game.get_game_state()
+
+        # Convert dictionary game state to Pydantic GameState
+        game_state = self._convert_game_state_to_pydantic(game_state_dict)
+        
+        # Create metadata
+        metadata = GameMetadata(
+            model=self.llm_client.get_model_name(),
+            template=self.prompt_template.get_template_name(),
+            parser=self.response_parser.get_parser_name(),
+            duration_seconds=duration,
+            start_time=self.start_time,
+            end_time=end_time,
+            date=self.date or datetime.now().strftime("%Y-%m-%d"),
+            invalid_word_attempts=self.invalid_word_attempts,
+            total_invalid_attempts=len(self.invalid_word_attempts)
+        )
 
         # Log final summary
-        self._log_game_summary(game_state, duration)
+        self._log_game_summary(game_state_dict, duration)
 
-        return {
-            "success": True,
-            "game_state": game_state,
-            "metadata": {
-                "model": self.llm_client.get_model_name(),
-                "template": self.prompt_template.get_template_name(),
-                "parser": self.response_parser.get_parser_name(),
-                "duration_seconds": duration,
-                "start_time": self.start_time.isoformat(),
-                "end_time": end_time.isoformat(),
-                "date": self.date or datetime.now().strftime("%Y-%m-%d"),
-                "invalid_word_attempts": self.invalid_word_attempts,
-                "total_invalid_attempts": len(self.invalid_word_attempts)
-            }
-        }
+        result = GameResult(
+            success=True,
+            game_state=game_state,
+            metadata=metadata
+        )
+        
+        # Save to database if service is provided
+        if self.db_service:
+            try:
+                self.db_service.save_game_result(result)
+                logger.debug("Game result saved to database")
+            except Exception as e:
+                logger.warning(f"Failed to save game result to database: {e}")
+        
+        return result
 
-    def _create_error_result(self, error_message: str) -> dict[str, Any]:
+    def _convert_game_state_to_pydantic(self, game_state_dict: dict) -> GameState:
+        """Convert dictionary game state to Pydantic GameState model."""
+        # Convert guess_results from list of list of dicts to list of list of LetterResult
+        pydantic_guess_results = []
+        for guess_result in game_state_dict["guess_results"]:
+            letter_results = []
+            for letter_dict in guess_result:
+                letter_result = LetterResult(
+                    position=letter_dict["position"],
+                    letter=letter_dict["letter"],
+                    status=LetterStatus(letter_dict["status"])
+                )
+                letter_results.append(letter_result)
+            pydantic_guess_results.append(letter_results)
+        
+        # Handle target_word - it might be None during gameplay
+        target_word = game_state_dict.get("target_word")
+        if not target_word:
+            # Game is still in progress, we need the actual target word for the model
+            target_word = self.game.target_word
+        
+        return GameState(
+            target_word=target_word,
+            guesses=game_state_dict["guesses"],
+            guess_reasoning=game_state_dict["guess_reasoning"],
+            guess_results=pydantic_guess_results,
+            guesses_made=game_state_dict["guesses_made"],
+            guesses_remaining=game_state_dict["guesses_remaining"],
+            status=GameStatus(game_state_dict["status"]),
+            won=game_state_dict["won"],
+            game_over=game_state_dict["game_over"]
+        )
+
+    def _create_error_result(self, error_message: str) -> GameResult:
         """Create error result when game fails."""
         end_time = datetime.now()
         duration = 0
         if self.start_time:
             duration = (end_time - self.start_time).total_seconds()
 
-        return {
-            "success": False,
-            "error": error_message,
-            "metadata": {
-                "model": self.llm_client.get_model_name(),
-                "template": self.prompt_template.get_template_name(),
-                "parser": self.response_parser.get_parser_name(),
-                "duration_seconds": duration,
-                "start_time": self.start_time.isoformat() if self.start_time else None,
-                "end_time": end_time.isoformat(),
-                "date": self.date or datetime.now().strftime("%Y-%m-%d"),
-                "invalid_word_attempts": self.invalid_word_attempts,
-                "total_invalid_attempts": len(self.invalid_word_attempts)
-            }
-        }
+        # Create metadata
+        metadata = GameMetadata(
+            model=self.llm_client.get_model_name(),
+            template=self.prompt_template.get_template_name(),
+            parser=self.response_parser.get_parser_name(),
+            duration_seconds=duration,
+            start_time=self.start_time or end_time,  # Use end_time as fallback
+            end_time=end_time,
+            date=self.date or datetime.now().strftime("%Y-%m-%d"),
+            invalid_word_attempts=self.invalid_word_attempts,
+            total_invalid_attempts=len(self.invalid_word_attempts)
+        )
+
+        return GameResult(
+            success=False,
+            game_state=None,  # No valid game state for error cases
+            metadata=metadata,
+            error=error_message
+        )
 
     def _log_game_summary(self, game_state: dict[str, Any], duration: float) -> None:
         """Log a summary of the completed game."""

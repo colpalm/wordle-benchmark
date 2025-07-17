@@ -66,6 +66,12 @@ def upgrade() -> None:
         sa.Column('extraction_method', sa.String(length=50), nullable=True),
         sa.Column('retry_attempt', sa.Integer(), nullable=False),
         sa.Column('response_time_ms', sa.Integer(), nullable=True),
+        # Usage tracking fields
+        sa.Column('prompt_tokens', sa.Integer(), nullable=True),
+        sa.Column('completion_tokens', sa.Integer(), nullable=True),
+        sa.Column('reasoning_tokens', sa.Integer(), nullable=True),
+        sa.Column('total_tokens', sa.Integer(), nullable=True),
+        sa.Column('cost_usd', sa.Numeric(precision=10, scale=6), nullable=True),
         sa.Column('created_at', sa.DateTime(), nullable=True),
         sa.ForeignKeyConstraint(['game_id'], ['games.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('id')
@@ -91,10 +97,30 @@ def upgrade() -> None:
     op.create_index('idx_game_turns_game_id', 'game_turns', ['game_id', 'turn_number'])
     op.create_index('idx_llm_interactions_game_id', 'llm_interactions', ['game_id', 'turn_number'])
     op.create_index('idx_invalid_attempts_game_id', 'invalid_word_attempts', ['game_id'])
+    
+    # Create game usage summary view
+    op.execute("""
+        CREATE VIEW game_usage_summary AS
+        SELECT 
+            game_id,
+            SUM(prompt_tokens) as total_tokens_input,
+            SUM(completion_tokens) as total_tokens_output, 
+            SUM(reasoning_tokens) as total_tokens_reasoning,
+            SUM(total_tokens) as total_tokens_all,
+            SUM(cost_usd) as total_cost_usd,
+            AVG(response_time_ms) as response_time_avg_ms,
+            COUNT(*) as total_requests
+        FROM llm_interactions 
+        WHERE parse_success = true
+        GROUP BY game_id;
+    """)
 
 
 def downgrade() -> None:
     """Downgrade schema."""
+    # Drop view first
+    op.execute("DROP VIEW IF EXISTS game_usage_summary;")
+    
     # Drop indexes
     op.drop_index('idx_invalid_attempts_game_id', table_name='invalid_word_attempts')
     op.drop_index('idx_llm_interactions_game_id', table_name='llm_interactions')

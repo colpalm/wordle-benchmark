@@ -26,6 +26,7 @@ class UsageStats(BaseModel):
     total_requests: int = 0
     total_tokens_input: int = 0
     total_tokens_output: int = 0
+    total_tokens_reasoning: int = 0
     total_cost_usd: float = 0.0
     response_time_avg_ms: float = 0.0
 
@@ -45,19 +46,19 @@ class GameMetadata(BaseModel):
 
 class GameResult(BaseModel):
     success: bool
-    game_state: GameState
+    game_state: Optional[GameState] = None
     metadata: GameMetadata
     error: Optional[str] = None
     
     # Convenience properties
     @property
     def won(self) -> bool:
-        return self.game_state.won
+        return self.game_state.won if self.game_state else False
     
     @property
     def target_word(self) -> str:
-        return self.game_state.target_word
+        return self.game_state.target_word if self.game_state else None
     
     @property
     def guesses_made(self) -> int:
-        return self.game_state.guesses_made
+        return self.game_state.guesses_made if self.game_state else 0
