@@ -129,7 +129,7 @@ class TestGameDatabaseService:
         assert saved_game.won is True
         assert saved_game.guesses_count == 2
         assert saved_game.status == "won"
-        assert saved_game.game_metadata["usage_stats"]["total_requests"] == 2
+        assert saved_game.game_metadata == {}
     
     def test_save_game_with_invalid_attempts(self, db_service):
         """Test saving a game with invalid word attempts."""
@@ -317,7 +317,7 @@ class TestGameDatabaseService:
                 "raw_response": "I think WORLD would be a good starting word.",
                 "parse_success": True,
                 "extraction_method": "quoted",
-                "retry_attempt": 1,
+                "attempt_number": 1,
                 "response_time_ms": 1500
             }
         ]
@@ -338,5 +338,5 @@ class TestGameDatabaseService:
         assert interaction.raw_response == "I think WORLD would be a good starting word."
         assert interaction.parse_success is True
         assert interaction.extraction_method == "quoted"
-        assert interaction.retry_attempt == 1
+        assert interaction.attempt_number == 1
         assert interaction.response_time_ms == 1500

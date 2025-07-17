@@ -72,7 +72,7 @@ class LLMInteraction(Base):
     parse_success: Mapped[bool] = mapped_column(Boolean)
     parse_error_message: Mapped[Optional[str]] = mapped_column(Text)  # If parse failed
     extraction_method: Mapped[Optional[str]] = mapped_column(String(50))  # "quoted", "capitalized", etc.
-    retry_attempt: Mapped[int] = mapped_column(Integer)  # Which retry (1st, 2nd, etc.)
+    attempt_number: Mapped[int] = mapped_column(Integer)  # Which attempt (1st, 2nd, etc.)
     response_time_ms: Mapped[Optional[int]] = mapped_column(Integer)  # LLM response time
     
     # Usage tracking fields
@@ -96,7 +96,7 @@ class InvalidWordAttempt(Base):
     game_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey(GAME_ID_FK, ondelete='CASCADE'))
     turn_number: Mapped[int] = mapped_column(Integer)
     attempted_word: Mapped[str] = mapped_column(String(5))
-    retry_attempt: Mapped[int] = mapped_column(Integer)
+    attempt_number: Mapped[int] = mapped_column(Integer)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
     
     # Relationships

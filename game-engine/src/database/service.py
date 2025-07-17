@@ -165,8 +165,6 @@ class GameDatabaseService:
         
         # Prepare metadata JSON (excluding fields that have dedicated columns)
         metadata_json = {}
-        if metadata.usage_stats:
-            metadata_json["usage_stats"] = metadata.usage_stats.model_dump()
         
         return Game(
             model_name=metadata.model,
@@ -233,8 +231,13 @@ class GameDatabaseService:
                 parse_success=interaction_data.get('parse_success', True),
                 parse_error_message=interaction_data.get('parse_error_message'),
                 extraction_method=interaction_data.get('extraction_method'),
-                retry_attempt=interaction_data.get('retry_attempt', 1),
-                response_time_ms=interaction_data.get('response_time_ms')
+                attempt_number=interaction_data.get('attempt_number', 1),
+                response_time_ms=interaction_data.get('response_time_ms'),
+                prompt_tokens=interaction_data.get('prompt_tokens'),
+                completion_tokens=interaction_data.get('completion_tokens'),
+                reasoning_tokens=interaction_data.get('reasoning_tokens'),
+                total_tokens=interaction_data.get('total_tokens'),
+                cost_usd=interaction_data.get('cost_usd')
             )
             session.add(interaction)
     
@@ -252,6 +255,6 @@ class GameDatabaseService:
                 game_id=game_id,
                 turn_number=0,  # Would need enhancement to track the actual turn
                 attempted_word=invalid_word,
-                retry_attempt=attempt_number
+                attempt_number=attempt_number
             )
             session.add(attempt)

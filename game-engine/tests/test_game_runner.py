@@ -294,7 +294,7 @@ class TestGameRunnerRetryLogic:
                 game_runner._make_guess_attempt()
 
         # Should have tracked all invalid attempts
-        assert len(game_runner.invalid_word_attempts) == game_runner.MAX_INVALID_WORD_RETRIES + 1
+        assert len(game_runner.invalid_word_attempts) == game_runner.MAX_INVALID_WORD_ATTEMPTS
 
     def test_parsing_error_retry_success(self, game_runner, llm_client):
         """

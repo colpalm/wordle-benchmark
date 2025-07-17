@@ -64,7 +64,7 @@ def upgrade() -> None:
         sa.Column('parse_success', sa.Boolean(), nullable=False),
         sa.Column('parse_error_message', sa.Text(), nullable=True),
         sa.Column('extraction_method', sa.String(length=50), nullable=True),
-        sa.Column('retry_attempt', sa.Integer(), nullable=False),
+        sa.Column('attempt_number', sa.Integer(), nullable=False),
         sa.Column('response_time_ms', sa.Integer(), nullable=True),
         # Usage tracking fields
         sa.Column('prompt_tokens', sa.Integer(), nullable=True),
@@ -83,7 +83,7 @@ def upgrade() -> None:
         sa.Column('game_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('turn_number', sa.Integer(), nullable=False),
         sa.Column('attempted_word', sa.String(length=5), nullable=False),
-        sa.Column('retry_attempt', sa.Integer(), nullable=False),
+        sa.Column('attempt_number', sa.Integer(), nullable=False),
         sa.Column('created_at', sa.DateTime(), nullable=True),
         sa.ForeignKeyConstraint(['game_id'], ['games.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('id')

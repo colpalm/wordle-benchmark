@@ -30,8 +30,8 @@ class GameRunner:
                      "google/gemini-2.5-flash",
                      "google/gemini-2.5-pro"]
 
-    MAX_INVALID_WORD_RETRIES = 5  # How many times to retry invalid words per guess
-    MAX_PARSING_RETRIES = 5       # How many times to retry parsing failures per guess
+    MAX_INVALID_WORD_ATTEMPTS = 5  # How many attempts for invalid words per guess
+    MAX_PARSING_ATTEMPTS = 5       # How many attempts for parsing failures per guess
 
     def __init__(
             self,
@@ -69,6 +69,11 @@ class GameRunner:
 
         # Track retry information for this game session (all invalid words tried)
         self.invalid_word_attempts: list[str] = []
+        
+        # Track LLM interactions for database persistence
+        self.llm_interactions: list[dict[str, Any]] = []
+        self._current_interaction: dict[str, Any] | None = None
+        self._current_turn_number: int = 0
 
     def run_complete_game(self) -> GameResult:
         """
@@ -110,22 +115,20 @@ class GameRunner:
 
     def _play_game(self) -> None:
         """Play the complete game loop."""
-        guess_number = 1
-
-        while self.game.status == GameStatus.IN_PROGRESS and guess_number <= WordleGame.MAX_GUESSES:
-            logger.info(f"\n--- Guess {guess_number}/{WordleGame.MAX_GUESSES} ---")
+        while self.game.status == GameStatus.IN_PROGRESS and self._current_turn_number < WordleGame.MAX_GUESSES:
+            self._current_turn_number += 1
+            logger.info(f"\n--- Guess {self._current_turn_number}/{WordleGame.MAX_GUESSES} ---")
 
             try:
                 self._make_guess_attempt()
-                guess_number += 1
 
             except Exception as e:
-                logger.error(f"💥 Failed to make guess {guess_number}: {e}")
+                logger.error(f"💥 Failed to make guess {self._current_turn_number}: {e}")
                 raise
 
     def _make_guess_attempt(self) -> None:
         """Make a guess attempt with retry logic for parsing and invalid word errors."""
-        retry_state = {"parsing": 0, "invalid_word": 0}
+        attempt_state = {"parsing": 1, "invalid_word": 1}
 
         while True:
             prompt = self._generate_prompt()
@@ -134,20 +137,31 @@ class GameRunner:
             raw_response = self._get_llm_response(prompt)
 
             # Try to parse the response
-            guess, reasoning = self._try_parse_with_retry(raw_response, retry_state)
+            guess, reasoning = self._try_parse_with_retry(raw_response, attempt_state)
             if guess is None:  # Parsing failed, try again with new response
                 continue
 
             # Try to execute the guess
-            success = self._try_execute_guess_with_retry(guess, reasoning, retry_state)
+            success = self._try_execute_guess_with_retry(guess, reasoning, attempt_state)
             if success:
                 return
 
     def _get_llm_response(self, prompt: str) -> str:
-        """Get response from LLM."""
+        """Get response from LLM and capture interaction data."""
         logger.debug("Requesting LLM response...")
         raw_response = self.llm_client.generate_response(prompt)
         logger.debug(f"Raw response: '{raw_response}'")
+        
+        # Get usage stats and add additional fields for database
+        interaction_data = self.llm_client.get_current_usage_stats()
+        interaction_data.update({
+            "prompt_text": prompt,
+            "raw_response": raw_response
+        })
+        
+        # Store for completion after parsing
+        self._current_interaction = interaction_data
+        
         return raw_response
 
     def _generate_prompt(self) -> str:
@@ -167,24 +181,41 @@ class GameRunner:
 
         return prompt
 
-    def _try_parse_with_retry(self, raw_response: str, retry_state: dict) -> tuple[Optional[str], Optional[str]]:
+    def _try_parse_with_retry(self, raw_response: str, attempt_state: dict) -> tuple[Optional[str], Optional[str]]:
         """Try to parse response, handle retries, return None if failed after max retries."""
         try:
-            return self._parse_llm_response(raw_response)
+            result = self._parse_llm_response(raw_response)
+            # Capture successful parsing
+            if self._current_interaction:
+                self._current_interaction.update({
+                    "parse_success": True,
+                    "attempt_number": attempt_state["parsing"]
+                })
+            return result
         except ValueError as parse_error:
-            retry_state["parsing"] += 1
-            if self._should_retry_parsing(retry_state["parsing"], parse_error, raw_response):
+            # Capture failed parsing
+            if self._current_interaction:
+                self._current_interaction.update({
+                    "parse_success": False,
+                    "parse_error_message": str(parse_error),
+                    "attempt_number": attempt_state["parsing"]
+                })
+            
+            if self._should_retry_parsing(attempt_state["parsing"], parse_error, raw_response):
+                attempt_state["parsing"] += 1  # Increment for next attempt
                 return None, None  # Signal to continue retry loop
             else:
                 raise self._create_parsing_error(parse_error)
 
-    def _try_execute_guess_with_retry(self, guess: str, reasoning: Optional[str], retry_state: dict) -> bool:
+    def _try_execute_guess_with_retry(self, guess: str, reasoning: Optional[str], attempt_state: dict) -> bool:
         """Try to execute guess, handle retries, return True if successful."""
         try:
             self._execute_game_guess(guess, reasoning)
+            # Complete and save the interaction data
+            self._finalize_current_interaction()
             return True  # Success!
         except ValueError as game_error:
-            return self._handle_game_error(game_error, guess, retry_state)
+            return self._handle_game_error(game_error, guess, attempt_state)
 
     def _parse_llm_response(self, raw_response: str) -> tuple[str, Optional[str]]:
         """Parse LLM response to extract guess and reasoning."""
@@ -197,20 +228,20 @@ class GameRunner:
 
         return guess, reasoning
 
-    def _should_retry_parsing(self, parsing_retries: int, parse_error: ValueError, raw_response: str) -> bool:
+    def _should_retry_parsing(self, parsing_attempts: int, parse_error: ValueError, raw_response: str) -> bool:
         """Check if we should retry parsing and log appropriately."""
-        if parsing_retries <= self.MAX_PARSING_RETRIES:
+        if parsing_attempts < self.MAX_PARSING_ATTEMPTS:
             logger.warning(
-                f"Failed to parse response (attempt {parsing_retries}/{self.MAX_PARSING_RETRIES}): {parse_error}")
+                f"Failed to parse response (attempt {parsing_attempts}/{self.MAX_PARSING_ATTEMPTS}): {parse_error}")
             logger.debug(f"Problematic response: '{raw_response}'")
             return True
         return False
 
     def _create_parsing_error(self, parse_error: ValueError) -> ValueError:
-        """Create error for parsing failure after max retries."""
-        logger.error(f"Failed to parse response after {self.MAX_PARSING_RETRIES} attempts")
+        """Create error for parsing failure after max attempts."""
+        logger.error(f"Failed to parse response after {self.MAX_PARSING_ATTEMPTS} attempts")
         return ValueError(
-            f"Could not parse valid guess from LLM response after {self.MAX_PARSING_RETRIES} attempts: {parse_error}")
+            f"Could not parse valid guess from LLM response after {self.MAX_PARSING_ATTEMPTS} attempts: {parse_error}")
 
     def _execute_game_guess(self, guess: str, reasoning: Optional[str]) -> None:
         """Execute the guess in the game and log results."""
@@ -222,29 +253,29 @@ class GameRunner:
         """Check if the error is specifically an invalid word error."""
         return "valid English word" in str(game_error)
 
-    def _should_retry_invalid_word(self, invalid_word_retries: int, guess: str) -> bool:
+    def _should_retry_invalid_word(self, invalid_word_attempts: int, guess: str) -> bool:
         """Check if we should retry invalid word and log appropriately."""
-        if invalid_word_retries <= self.MAX_INVALID_WORD_RETRIES:
+        if invalid_word_attempts < self.MAX_INVALID_WORD_ATTEMPTS:
             logger.warning(
-                f"Invalid word '{guess}' (attempt {invalid_word_retries}/{self.MAX_INVALID_WORD_RETRIES}). Retrying...")
+                f"Invalid word '{guess}' (attempt {invalid_word_attempts}/{self.MAX_INVALID_WORD_ATTEMPTS}). Retrying...")
             return True
         return False
 
     def _create_invalid_word_error(self) -> ValueError:
-        """Create error for invalid word failure after max retries."""
-        logger.error(f"Failed to get valid word after {self.MAX_INVALID_WORD_RETRIES} attempts")
+        """Create error for invalid word failure after max attempts."""
+        logger.error(f"Failed to get valid word after {self.MAX_INVALID_WORD_ATTEMPTS} attempts")
         invalid_words_list = ", ".join(self.invalid_word_attempts)
         return ValueError(
-            f"Could not get valid word from LLM after {self.MAX_INVALID_WORD_RETRIES} attempts. Invalid words tried: {invalid_words_list}")
+            f"Could not get valid word from LLM after {self.MAX_INVALID_WORD_ATTEMPTS} attempts. Invalid words tried: {invalid_words_list}")
 
-    def _handle_game_error(self, game_error: ValueError, guess: str, retry_state: dict) -> bool:
+    def _handle_game_error(self, game_error: ValueError, guess: str, attempt_state: dict) -> bool:
         """Handle game errors, return True if should continue, False if should retry, raises if failed."""
         if GameRunner._is_invalid_word_error(game_error):
             # Handle invalid word
-            retry_state["invalid_word"] += 1
             self.invalid_word_attempts.append(guess)
 
-            if self._should_retry_invalid_word(retry_state["invalid_word"], guess):
+            if self._should_retry_invalid_word(attempt_state["invalid_word"], guess):
+                attempt_state["invalid_word"] += 1  # Increment for next attempt
                 return False  # Signal to continue retry loop
             else:
                 raise self._create_invalid_word_error()
@@ -314,7 +345,7 @@ class GameRunner:
         # Save to database if service is provided
         if self.db_service:
             try:
-                self.db_service.save_game_result(result)
+                self.db_service.save_game_result(result, self.llm_interactions)
                 logger.debug("Game result saved to database")
             except Exception as e:
                 logger.warning(f"Failed to save game result to database: {e}")
@@ -374,6 +405,7 @@ class GameRunner:
             total_invalid_attempts=len(self.invalid_word_attempts)
         )
 
+        # TODO: save partial game results
         return GameResult(
             success=False,
             game_state=None,  # No valid game state for error cases
@@ -407,6 +439,21 @@ class GameRunner:
                 f"Invalid words attempted: {', '.join(self.invalid_word_attempts)} ({len(self.invalid_word_attempts)} total)")
 
         logger.info("=" * 50)
+
+    def _finalize_current_interaction(self) -> None:
+        """Complete the current interaction data and add it to the interactions list."""
+        if self._current_interaction:
+            # Add turn number and any missing fields
+            self._current_interaction.update({
+                "turn_number": self._current_turn_number,
+                "extraction_method": self.response_parser.get_parser_name()
+            })
+            
+            # Add to the interactions list
+            self.llm_interactions.append(self._current_interaction)
+            
+            # Clear the current interaction
+            self._current_interaction = None
 
 if __name__ == "__main__":
     # Setup file paths with env var support

@@ -213,6 +213,17 @@ class OpenRouterClient(LLMClient):
         Return the configured model name
         """
         return self.model
+    
+    def get_current_usage_stats(self) -> dict:
+        """Get usage statistics from the most recent API call"""
+        return {
+            "prompt_tokens": self._last_prompt_tokens,
+            "completion_tokens": self._last_completion_tokens,
+            "reasoning_tokens": self._last_reasoning_tokens,
+            "total_tokens": self._last_total_tokens,
+            "cost_usd": self._last_cost_usd,
+            "response_time_ms": self._last_response_time_ms
+        }
 
     def _update_usage_stats(self, usage_data: dict, response_time: float) -> None:
         """Update usage statistics for the current API call"""
@@ -238,14 +249,3 @@ class OpenRouterClient(LLMClient):
             self._last_reasoning_tokens = 0
             self._last_total_tokens = 0
             self._last_cost_usd = 0.0
-    
-    def get_last_call_usage(self) -> dict:
-        """Get usage data from the most recent API call"""
-        return {
-            "prompt_tokens": self._last_prompt_tokens,
-            "completion_tokens": self._last_completion_tokens,
-            "reasoning_tokens": self._last_reasoning_tokens,
-            "total_tokens": self._last_total_tokens,
-            "cost_usd": self._last_cost_usd,
-            "response_time_ms": self._last_response_time_ms
-        }
