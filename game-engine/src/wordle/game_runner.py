@@ -447,8 +447,7 @@ class GameRunner:
         if self._current_interaction:
             # Add turn number and any missing fields
             self._current_interaction.update({
-                "turn_number": self._current_turn_number,
-                "extraction_method": self.response_parser.get_parser_name()
+                "turn_number": self._current_turn_number
             })
             
             # Add to the interactions list

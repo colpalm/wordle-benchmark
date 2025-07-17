@@ -226,7 +226,6 @@ class GameDatabaseService:
                 raw_response=interaction_data.get('raw_response', ''),
                 parse_success=interaction_data.get('parse_success', True),
                 parse_error_message=interaction_data.get('parse_error_message'),
-                extraction_method=interaction_data.get('extraction_method'),
                 attempt_number=interaction_data.get('attempt_number', 1),
                 response_time_ms=interaction_data.get('response_time_ms'),
                 prompt_tokens=interaction_data.get('prompt_tokens'),

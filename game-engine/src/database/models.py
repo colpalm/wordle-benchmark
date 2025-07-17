@@ -70,7 +70,6 @@ class LLMInteraction(Base):
     raw_response: Mapped[str] = mapped_column(Text)
     parse_success: Mapped[bool] = mapped_column(Boolean)
     parse_error_message: Mapped[Optional[str]] = mapped_column(Text)  # If parse failed
-    extraction_method: Mapped[Optional[str]] = mapped_column(String(50))  # "quoted", "capitalized", etc.
     attempt_number: Mapped[int] = mapped_column(Integer)  # Which attempt (1st, 2nd, etc.)
     response_time_ms: Mapped[Optional[int]] = mapped_column(Integer)  # LLM response time
     

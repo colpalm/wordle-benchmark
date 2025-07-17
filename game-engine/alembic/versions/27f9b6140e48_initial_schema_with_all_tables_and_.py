@@ -63,7 +63,6 @@ def upgrade() -> None:
         sa.Column('raw_response', sa.Text(), nullable=False),
         sa.Column('parse_success', sa.Boolean(), nullable=False),
         sa.Column('parse_error_message', sa.Text(), nullable=True),
-        sa.Column('extraction_method', sa.String(length=50), nullable=True),
         sa.Column('attempt_number', sa.Integer(), nullable=False),
         sa.Column('response_time_ms', sa.Integer(), nullable=True),
         # Usage tracking fields

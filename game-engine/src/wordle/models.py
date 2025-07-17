@@ -46,7 +46,6 @@ class LLMInteraction(BaseModel):
     raw_response: str
     parse_success: bool
     parse_error_message: Optional[str] = None
-    extraction_method: Optional[str] = None
     attempt_number: int = Field(ge=1)
     response_time_ms: Optional[int] = None
 

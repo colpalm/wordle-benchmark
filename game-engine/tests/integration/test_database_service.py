@@ -315,7 +315,6 @@ class TestGameDatabaseService:
                 "prompt_text": "What is your first guess?",
                 "raw_response": "I think WORLD would be a good starting word.",
                 "parse_success": True,
-                "extraction_method": "quoted",
                 "attempt_number": 1,
                 "response_time_ms": 1500
             }
@@ -336,6 +335,5 @@ class TestGameDatabaseService:
         assert interaction.prompt_text == "What is your first guess?"
         assert interaction.raw_response == "I think WORLD would be a good starting word."
         assert interaction.parse_success is True
-        assert interaction.extraction_method == "quoted"
         assert interaction.attempt_number == 1
         assert interaction.response_time_ms == 1500
