@@ -100,7 +100,6 @@ class TestGameDatabaseService:
             invalid_word_attempts=[],
             total_invalid_attempts=0,
             usage_stats=UsageStats(
-                total_requests=2,
                 total_tokens_input=100,
                 total_tokens_output=50,
                 total_cost_usd=0.01,

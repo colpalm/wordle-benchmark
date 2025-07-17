@@ -161,7 +161,6 @@ class GameRunner:
         
         # Convert to type-safe UsageStats model for validation
         usage_stats = UsageStats(
-            total_requests=1,  # This represents one API call
             total_tokens_input=raw_usage_stats.get("prompt_tokens", 0),
             total_tokens_output=raw_usage_stats.get("completion_tokens", 0),
             total_tokens_reasoning=raw_usage_stats.get("reasoning_tokens", 0),

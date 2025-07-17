@@ -116,7 +116,6 @@ class TestGameState:
 class TestUsageStats:
     def test_default_usage_stats(self):
         stats = UsageStats()
-        assert stats.total_requests == 0
         assert stats.total_tokens_input == 0
         assert stats.total_tokens_output == 0
         assert stats.total_cost_usd == pytest.approx(0.0)
@@ -124,13 +123,11 @@ class TestUsageStats:
 
     def test_custom_usage_stats(self):
         stats = UsageStats(
-            total_requests=5,
             total_tokens_input=100,
             total_tokens_output=50,
             total_cost_usd=0.02,
             response_time_avg_ms=250.5
         )
-        assert stats.total_requests == 5
         assert stats.total_tokens_input == 100
         assert stats.total_tokens_output == 50
         assert stats.total_cost_usd == pytest.approx(0.02)
@@ -361,7 +358,6 @@ class TestModelSerialization:
 
     def test_usage_stats_serialization(self):
         stats = UsageStats(
-            total_requests=5,
             total_tokens_input=100,
             total_tokens_output=50,
             total_cost_usd=0.02,
@@ -370,7 +366,6 @@ class TestModelSerialization:
         
         json_data = stats.model_dump()
         assert json_data == {
-            "total_requests": 5,
             "total_tokens_input": 100,
             "total_tokens_output": 50,
             "total_tokens_reasoning": 0,

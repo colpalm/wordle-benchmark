@@ -103,7 +103,6 @@ class GameState(BaseModel):
 
 
 class UsageStats(BaseModel):
-    total_requests: int = 0
     total_tokens_input: int = 0
     total_tokens_output: int = 0
     total_tokens_reasoning: int = 0
