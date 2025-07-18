@@ -98,13 +98,7 @@ class TestGameDatabaseService:
             end_time=end_time,
             date="2024-01-15",
             invalid_word_attempts=[],
-            total_invalid_attempts=0,
-            usage_stats=UsageStats(
-                total_tokens_input=100,
-                total_tokens_output=50,
-                total_cost_usd=0.01,
-                response_time_ms=1200.0
-            )
+            total_invalid_attempts=0
         )
         
         game_result = GameResult(
@@ -177,7 +171,7 @@ class TestGameDatabaseService:
         assert saved_game.total_invalid_attempts == 2
         
         # SQLAlchemy relationships are iterable at runtime despite type warnings
-        assert len(saved_game.invalid_attempts) == 2
+        assert saved_game.total_invalid_attempts == 2
         assert saved_game.invalid_attempts[0].attempted_word == "XYZZZ"
         assert saved_game.invalid_attempts[1].attempted_word == "QWRTY"
     
