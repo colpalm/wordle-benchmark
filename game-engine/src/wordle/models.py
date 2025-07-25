@@ -90,15 +90,15 @@ class LetterResult(BaseModel):
 
 
 class GameState(BaseModel):
-    target_word: str = Field(min_length=5, max_length=5)
+    target_word: Optional[str] = Field(None, min_length=5, max_length=5)
     guesses: List[str] = Field(default_factory=list)
     guess_reasoning: List[Optional[str]] = Field(default_factory=list)
     guess_results: List[List[LetterResult]] = Field(default_factory=list)
-    guesses_made: int = Field(ge=0, le=6)
-    guesses_remaining: int = Field(ge=0, le=6)
-    status: GameStatus
-    won: bool
-    game_over: bool
+    guesses_made: int = Field(ge=0, le=6, default=0)
+    guesses_remaining: int = Field(ge=0, le=6, default=6)
+    status: GameStatus = GameStatus.IN_PROGRESS
+    won: bool = False
+    game_over: bool = False
 
 
 class UsageStats(BaseModel):

@@ -412,6 +412,16 @@ class GameRunner:
         if self.start_time:
             duration = (end_time - self.start_time).total_seconds()
 
+        # Try to get partial game state if available
+        game_state = None
+        if self.game:
+            try:
+                current_state = self.game.get_game_state()
+                game_state = self._convert_game_state_to_pydantic(current_state)
+            except Exception:
+                # If we can't get game state, fall back to None
+                pass
+
         # Create metadata
         metadata = GameMetadata(
             model=self.llm_client.get_model_name(),
@@ -424,10 +434,9 @@ class GameRunner:
             total_invalid_attempts=len(self.invalid_word_attempts)
         )
 
-        # TODO: save partial game results
         return GameResult(
             success=False,
-            game_state=None,  # No valid game state for error cases
+            game_state=game_state,  # Partial state when available or else None
             metadata=metadata,
             error=error_message
         )

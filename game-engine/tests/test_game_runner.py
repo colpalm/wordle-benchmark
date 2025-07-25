@@ -198,6 +198,45 @@ class TestGameRunner:
         assert result.metadata.parser == "json"
         assert result.metadata.duration_seconds == pytest.approx(15.0)
 
+    def test_create_error_result_with_partial_game_state(self, game_runner, llm_client):
+        """Test error result creation preserves partial game state when available."""
+        # Given a game that has been initialized and has some progress
+        game_runner._initialize_game()
+        game_runner.start_time = datetime(2025, 1, 15, 10, 0, 0)
+        
+        # Make a successful guess first to establish partial state
+        json_response = '{"reasoning": "Starting with common letters", "guess": "STARE"}'
+        with patch.object(llm_client, 'generate_response', return_value=json_response):
+            game_runner._make_guess_attempt()
+        
+        # Verify we have some game progress
+        assert len(game_runner.game.guesses) == 1
+        assert game_runner.game.guesses[0] == "STARE"
+
+        # When we create an error result
+        with patch('wordle.game_runner.datetime') as mock_datetime:
+            mock_datetime.now.return_value = datetime(2025, 1, 15, 10, 0, 15)
+            
+            result = game_runner._create_error_result("Simulated failure after partial progress")
+
+        # Then the error result should preserve the partial game state
+        assert result.success is False
+        assert result.error == "Simulated failure after partial progress"
+        assert result.game_state is not None  # Key difference from basic error case
+        
+        # Verify partial state was preserved
+        assert result.game_state.target_word == "CRANE"  # From fixture
+        assert result.game_state.guesses == ["STARE"]
+        assert result.game_state.guess_reasoning == ["Starting with common letters"]
+        assert result.game_state.guesses_made == 1
+        assert result.game_state.guesses_remaining == 5
+        assert result.game_state.won is False
+        assert result.game_state.game_over is False
+        
+        # Metadata should still be correct
+        assert result.metadata.model == "test-model"
+        assert result.metadata.duration_seconds == pytest.approx(15.0)
+
 
 class TestGameRunnerRetryLogic:
     """Test suite for the new retry logic for invalid words and parsing failures."""
