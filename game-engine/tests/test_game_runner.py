@@ -209,6 +209,7 @@ class TestGameRunnerRetryLogic:
         THEN the invalid word should be retried and the valid word should be accepted
         """
         game_runner._initialize_game()
+        game_runner._current_turn_number = 1
 
         # Mock LLM responses: first invalid, then valid
         json_responses = [
@@ -225,8 +226,11 @@ class TestGameRunnerRetryLogic:
         assert len(game_runner.game.guesses) == 1
 
         # Should have tracked the invalid attempt
-        assert "ZXXCV" in game_runner.invalid_word_attempts
         assert len(game_runner.invalid_word_attempts) == 1
+        invalid_attempt = game_runner.invalid_word_attempts[0]
+        assert invalid_attempt["word"] == "ZXXCV"
+        assert invalid_attempt["turn_number"] == 1
+        assert invalid_attempt["attempt_number"] == 1
 
     def test_invalid_word_multiple_retries_success(self, game_runner, llm_client):
         """
@@ -235,6 +239,7 @@ class TestGameRunnerRetryLogic:
         THEN all invalid words should be tracked and the valid word accepted
         """
         game_runner._initialize_game()
+        game_runner._current_turn_number = 1
 
         # Mock LLM responses: two invalid, then valid
         json_responses = [
@@ -251,9 +256,10 @@ class TestGameRunnerRetryLogic:
         assert len(game_runner.game.guesses) == 1
 
         # Should have tracked both invalid attempts
-        assert "ZXXCV" in game_runner.invalid_word_attempts
-        assert "QWERT" in game_runner.invalid_word_attempts
         assert len(game_runner.invalid_word_attempts) == 2
+        invalid_words = [attempt["word"] for attempt in game_runner.invalid_word_attempts]
+        assert "ZXXCV" in invalid_words
+        assert "QWERT" in invalid_words
 
     def test_invalid_across_multiple_guesses(self, game_runner, llm_client):
         """
@@ -262,6 +268,7 @@ class TestGameRunnerRetryLogic:
         THEN all invalid words should be tracked and the valid words accepted
         """
         game_runner._initialize_game()
+        game_runner._current_turn_number = 1
 
         json_responses = [
             '{"reasoning": "First guess", "guess": "ZXXCV"}',  # Invalid
@@ -275,9 +282,10 @@ class TestGameRunnerRetryLogic:
             game_runner._make_guess_attempt()  # Second guess
 
         assert game_runner.game.guesses == ["STARE", "CRANE"]
-        assert "ZXXCV" in game_runner.invalid_word_attempts
-        assert "QWERT" in game_runner.invalid_word_attempts
         assert len(game_runner.invalid_word_attempts) == 2
+        invalid_words = [attempt["word"] for attempt in game_runner.invalid_word_attempts]
+        assert "ZXXCV" in invalid_words
+        assert "QWERT" in invalid_words
 
     def test_invalid_word_max_retries_exceeded(self, game_runner, llm_client):
         """
@@ -346,6 +354,7 @@ class TestGameRunnerRetryLogic:
         THEN both should be retried independently, and success should be achieved
         """
         game_runner._initialize_game()
+        game_runner._current_turn_number = 1
 
         # Mock LLM responses: parsing error, then invalid word, then success
         llm_responses = [
@@ -361,8 +370,8 @@ class TestGameRunnerRetryLogic:
         assert game_runner.game.guesses[-1] == "STARE"
 
         # Should have tracked the invalid word attempt
-        assert "ZXXCV" in game_runner.invalid_word_attempts
         assert len(game_runner.invalid_word_attempts) == 1
+        assert game_runner.invalid_word_attempts[0]["word"] == "ZXXCV"
 
     def test_prompt_feedback_with_invalid_words(self, game_runner):
         """
@@ -371,7 +380,10 @@ class TestGameRunnerRetryLogic:
         THEN the prompt should include information about invalid words
         """
         game_runner._initialize_game()
-        game_runner.invalid_word_attempts = ["ZXXCV", "QWERT"]
+        game_runner.invalid_word_attempts = [
+            {"word": "ZXXCV", "turn_number": 1, "attempt_number": 1},
+            {"word": "QWERT", "turn_number": 2, "attempt_number": 1}
+        ]
 
         prompt = game_runner._generate_prompt()
 
@@ -415,8 +427,6 @@ class TestGameRunnerRetryLogic:
         assert result.success is True
         assert result.game_state.won is True
 
-        # Should track invalid attempts in metadata
-        assert hasattr(result.metadata, 'invalid_word_attempts')
+        # Invalid attempts count tracked in metadata (words stored in database)
         assert hasattr(result.metadata, 'total_invalid_attempts')
-        assert result.metadata.invalid_word_attempts == ["ZXXCV"]
         assert result.metadata.total_invalid_attempts == 1

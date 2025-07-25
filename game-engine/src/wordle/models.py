@@ -83,7 +83,6 @@ class GameUsageSummary(BaseModel):
 
 ## Runtime Pydantic models ##
 
-
 class LetterResult(BaseModel):
     position: int = Field(ge=0, le=4)
     letter: str = Field(min_length=1, max_length=1)
@@ -118,7 +117,6 @@ class GameMetadata(BaseModel):
     start_time: datetime
     end_time: datetime
     date: str  # YYYY-MM-DD format
-    invalid_word_attempts: List[str] = Field(default_factory=list)
     total_invalid_attempts: int = Field(ge=0, default=0)
 
 

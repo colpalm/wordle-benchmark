@@ -97,7 +97,6 @@ class TestGameDatabaseService:
             start_time=start_time,
             end_time=end_time,
             date="2024-01-15",
-            invalid_word_attempts=[],
             total_invalid_attempts=0
         )
         
@@ -153,7 +152,6 @@ class TestGameDatabaseService:
             start_time=datetime.now(UTC),
             end_time=datetime.now(UTC),
             date="2024-01-15",
-            invalid_word_attempts=["XYZZZ", "QWRTY"],
             total_invalid_attempts=2
         )
         
@@ -163,8 +161,14 @@ class TestGameDatabaseService:
             metadata=metadata
         )
         
+        # Prepare invalid word attempts in consolidated structure
+        invalid_word_attempts = [
+            {"word": "XYZZZ", "turn_number": 1, "attempt_number": 1},
+            {"word": "QWRTY", "turn_number": 1, "attempt_number": 2}
+        ]
+        
         # Save with invalid attempts
-        game_id = db_service.save_game_result(game_result)
+        game_id = db_service.save_game_result(game_result, None, invalid_word_attempts)
         
         # Verify
         saved_game = db_service.get_game_by_id(game_id)

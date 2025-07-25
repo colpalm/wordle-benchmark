@@ -51,12 +51,14 @@ class GameDatabaseService:
             raise
     
     def save_game_result(self, game_result: GameResult, 
-                        llm_interactions: Optional[List[Dict[str, Any]]] = None) -> UUID:
+                        llm_interactions: Optional[List[Dict[str, Any]]] = None,
+                        invalid_word_attempts: Optional[List[Dict[str, Any]]] = None) -> UUID:
         """Save a complete game result to the database.
         
         Args:
             game_result: Pydantic GameResult model
             llm_interactions: Optional list of LLM interaction data
+            invalid_word_attempts: Optional list of dicts with word and turn info for invalid words
             
         Returns:
             UUID of the saved game
@@ -79,7 +81,8 @@ class GameDatabaseService:
                     GameDatabaseService._add_llm_interactions(session, game.id, llm_interactions)
                 
                 # Add invalid word attempts
-                GameDatabaseService._add_invalid_word_attempts(session, game.id, game_result)
+                if invalid_word_attempts:
+                    GameDatabaseService._add_invalid_word_attempts(session, game.id, invalid_word_attempts)
                 
                 session.commit()
                 logger.info(f"Game result saved successfully with ID: {game.id}")
@@ -238,18 +241,14 @@ class GameDatabaseService:
     
     @staticmethod
     def _add_invalid_word_attempts(session: Session, game_id: UUID,
-                                 game_result: GameResult) -> None:
+                                 invalid_word_attempts: List[Dict[str, Any]]) -> None:
         """Add invalid word attempts to the database."""
-        invalid_attempts = game_result.metadata.invalid_word_attempts
-        
-        for attempt_number, invalid_word in enumerate(invalid_attempts, 1):
-            # Note: We don't have turn_number info for invalid attempts in the current model
-            # This would need to be enhanced in the GameResult model to track which turn
-            # For now, we'll set turn_number to 0 to indicate it's not tied to a specific turn
+        for invalid_attempt in invalid_word_attempts:
+            # Create InvalidWordAttempt object with proper game_id and turn number
             attempt = InvalidWordAttempt(
                 game_id=game_id,
-                turn_number=0,  # Would need enhancement to track the actual turn
-                attempted_word=invalid_word,
-                attempt_number=attempt_number
+                turn_number=invalid_attempt["turn_number"],
+                attempted_word=invalid_attempt["word"],
+                attempt_number=invalid_attempt["attempt_number"]
             )
             session.add(attempt)

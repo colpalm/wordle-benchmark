@@ -68,7 +68,7 @@ class GameRunner:
         self.start_time: datetime | None = None
 
         # Track retry information for this game session (all invalid words tried)
-        self.invalid_word_attempts: list[str] = []
+        self.invalid_word_attempts: list[dict[str, Any]] = []  # Word + turn info
         
         # Track LLM interactions for database persistence
         self.llm_interactions: list[dict[str, Any]] = []
@@ -190,7 +190,8 @@ class GameRunner:
 
         # Add invalid word feedback if we have any
         if self.invalid_word_attempts:
-            invalid_list = ", ".join(self.invalid_word_attempts)
+            invalid_words = [attempt["word"] for attempt in self.invalid_word_attempts]
+            invalid_list = ", ".join(invalid_words)
             feedback = f"Invalid Guesses:\nNOTE: The following words you tried are not in the dictionary: {invalid_list}\n\n"
 
             prompt = self.prompt_template.insert_feedback(prompt, feedback)
@@ -280,7 +281,7 @@ class GameRunner:
     def _create_invalid_word_error(self) -> ValueError:
         """Create error for invalid word failure after max attempts."""
         logger.error(f"Failed to get valid word after {self.MAX_INVALID_WORD_ATTEMPTS} attempts")
-        invalid_words_list = ", ".join(self.invalid_word_attempts)
+        invalid_words_list = ", ".join([attempt["word"] for attempt in self.invalid_word_attempts])
         return ValueError(
             f"Could not get valid word from LLM after {self.MAX_INVALID_WORD_ATTEMPTS} attempts. Invalid words tried: {invalid_words_list}")
 
@@ -288,7 +289,11 @@ class GameRunner:
         """Handle game errors, return True if should continue, False if should retry, raises if failed."""
         if GameRunner._is_invalid_word_error(game_error):
             # Handle invalid word
-            self.invalid_word_attempts.append(guess)
+            self.invalid_word_attempts.append({
+                "word": guess,
+                "turn_number": self._current_turn_number,
+                "attempt_number": attempt_state["invalid_word"]
+            })
 
             if self._should_retry_invalid_word(attempt_state["invalid_word"], guess):
                 attempt_state["invalid_word"] += 1  # Increment for next attempt
@@ -345,7 +350,6 @@ class GameRunner:
             start_time=self.start_time,
             end_time=end_time,
             date=self.date or datetime.now().strftime("%Y-%m-%d"),
-            invalid_word_attempts=self.invalid_word_attempts,
             total_invalid_attempts=len(self.invalid_word_attempts)
         )
 
@@ -361,7 +365,7 @@ class GameRunner:
         # Save to database if service is provided
         if self.db_service:
             try:
-                self.db_service.save_game_result(result, self.llm_interactions)
+                self.db_service.save_game_result(result, self.llm_interactions, self.invalid_word_attempts)
                 logger.debug("Game result saved to database")
             except Exception as e:
                 logger.warning(f"Failed to save game result to database: {e}")
@@ -417,7 +421,6 @@ class GameRunner:
             start_time=self.start_time or end_time,  # Use end_time as fallback
             end_time=end_time,
             date=self.date or datetime.now().strftime("%Y-%m-%d"),
-            invalid_word_attempts=self.invalid_word_attempts,
             total_invalid_attempts=len(self.invalid_word_attempts)
         )
 
@@ -451,8 +454,9 @@ class GameRunner:
 
         # Log invalid word attempts if any
         if self.invalid_word_attempts:
+            invalid_words = [attempt["word"] for attempt in self.invalid_word_attempts]
             logger.info(
-                f"Invalid words attempted: {', '.join(self.invalid_word_attempts)} ({len(self.invalid_word_attempts)} total)")
+                f"Invalid words attempted: {', '.join(invalid_words)} ({len(self.invalid_word_attempts)} total)")
 
         logger.info("=" * 50)
 

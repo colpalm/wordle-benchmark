@@ -147,7 +147,6 @@ class TestGameMetadata:
             start_time=start_time,
             end_time=end_time,
             date="2024-01-01",
-            invalid_word_attempts=["XXXXX"],
             total_invalid_attempts=1
         )
         
@@ -158,7 +157,6 @@ class TestGameMetadata:
         assert metadata.start_time == start_time
         assert metadata.end_time == end_time
         assert metadata.date == "2024-01-01"
-        assert metadata.invalid_word_attempts == ["XXXXX"]
         assert metadata.total_invalid_attempts == 1
 
     def test_invalid_duration(self):
@@ -196,7 +194,6 @@ class TestGameMetadata:
             end_time=datetime.now(),
             date="2024-01-01"
         )
-        assert metadata.invalid_word_attempts == []
         assert metadata.total_invalid_attempts == 0
 
 
@@ -388,7 +385,6 @@ class TestModelSerialization:
             start_time=start_time,
             end_time=end_time,
             date="2024-01-01",
-            invalid_word_attempts=["XXXXX"],
             total_invalid_attempts=1
         )
         
@@ -398,7 +394,6 @@ class TestModelSerialization:
         assert json_data["parser"] == "simple"
         assert json_data["duration_seconds"] == pytest.approx(300.0)
         assert json_data["date"] == "2024-01-01"
-        assert json_data["invalid_word_attempts"] == ["XXXXX"]
         assert json_data["total_invalid_attempts"] == 1
         
         reconstructed = GameMetadata.model_validate(json_data)
