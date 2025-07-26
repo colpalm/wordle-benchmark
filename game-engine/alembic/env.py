@@ -1,14 +1,13 @@
 import os
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
+from sqlalchemy import engine_from_config, pool
 
 from alembic import context
+from database.config import LocalDevConfig
 
 # Import our database models for autogenerate support
 from database.models import Base
-from database.config import LocalDevConfig
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -29,7 +28,7 @@ def get_database_url():
     url = os.getenv('DATABASE_URL')
     if url:
         return url
-    
+
     # Fall back to LocalDevConfig
     return LocalDevConfig().database_url
 

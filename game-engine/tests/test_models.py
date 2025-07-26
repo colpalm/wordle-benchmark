@@ -1,16 +1,11 @@
-import pytest
 import json
 from datetime import datetime
-from pydantic import ValidationError
-from wordle.enums import LetterStatus, GameStatus
 
-from wordle.models import (
-    LetterResult,
-    GameState,
-    GameMetadata,
-    GameResult,
-    UsageStats
-)
+import pytest
+from pydantic import ValidationError
+
+from wordle.enums import GameStatus, LetterStatus
+from wordle.models import GameMetadata, GameResult, GameState, LetterResult, UsageStats
 
 
 class TestLetterResult:
@@ -27,14 +22,14 @@ class TestLetterResult:
     def test_invalid_position_bounds(self):
         with pytest.raises(ValidationError):
             LetterResult(position=-1, letter="A", status=LetterStatus.CORRECT)
-        
+
         with pytest.raises(ValidationError):
             LetterResult(position=5, letter="A", status=LetterStatus.CORRECT)
 
     def test_invalid_letter_length(self):
         with pytest.raises(ValidationError):
             LetterResult(position=0, letter="", status=LetterStatus.CORRECT)
-        
+
         with pytest.raises(ValidationError):
             LetterResult(position=0, letter="AB", status=LetterStatus.CORRECT)
 
@@ -138,7 +133,7 @@ class TestGameMetadata:
     def test_valid_game_metadata(self):
         start_time = datetime(2024, 1, 1, 10, 0, 0)
         end_time = datetime(2024, 1, 1, 10, 5, 0)
-        
+
         metadata = GameMetadata(
             model="gpt-4o-mini",
             template="simple",
@@ -149,7 +144,7 @@ class TestGameMetadata:
             date="2024-01-01",
             total_invalid_attempts=1
         )
-        
+
         assert metadata.model == "gpt-4o-mini"
         assert metadata.template == "simple"
         assert metadata.parser == "simple"
@@ -201,7 +196,7 @@ class TestGameResult:
     def test_valid_game_result(self):
         start_time = datetime(2024, 1, 1, 10, 0, 0)
         end_time = datetime(2024, 1, 1, 10, 5, 0)
-        
+
         game_state = GameState(
             target_word="HELLO",
             guesses=["WORLD", "HELLO"],
@@ -211,7 +206,7 @@ class TestGameResult:
             won=True,
             game_over=True
         )
-        
+
         metadata = GameMetadata(
             model="gpt-4o-mini",
             template="simple",
@@ -221,13 +216,13 @@ class TestGameResult:
             end_time=end_time,
             date="2024-01-01"
         )
-        
+
         result = GameResult(
             success=True,
             game_state=game_state,
             metadata=metadata
         )
-        
+
         assert result.success is True
         assert result.game_state == game_state
         assert result.metadata == metadata
@@ -243,7 +238,7 @@ class TestGameResult:
             won=True,
             game_over=True
         )
-        
+
         metadata = GameMetadata(
             model="gpt-4o-mini",
             template="simple",
@@ -253,13 +248,13 @@ class TestGameResult:
             end_time=datetime.now(),
             date="2024-01-01"
         )
-        
+
         result = GameResult(
             success=True,
             game_state=game_state,
             metadata=metadata
         )
-        
+
         assert result.won is True
         assert result.target_word == "HELLO"
         assert result.guesses_made == 2
@@ -273,7 +268,7 @@ class TestGameResult:
             won=False,
             game_over=False
         )
-        
+
         metadata = GameMetadata(
             model="gpt-4o-mini",
             template="simple",
@@ -283,14 +278,14 @@ class TestGameResult:
             end_time=datetime.now(),
             date="2024-01-01"
         )
-        
+
         result = GameResult(
             success=False,
             game_state=game_state,
             metadata=metadata,
             error="Connection timeout"
         )
-        
+
         assert result.success is False
         assert result.error == "Connection timeout"
 
@@ -302,7 +297,7 @@ class TestModelSerialization:
             letter="A",
             status=LetterStatus.CORRECT
         )
-        
+
         # Test JSON serialization
         json_data = result.model_dump()
         assert json_data == {
@@ -310,11 +305,11 @@ class TestModelSerialization:
             "letter": "A",
             "status": "correct"
         }
-        
+
         # Test JSON string serialization
         json_str = result.model_dump_json()
         assert json.loads(json_str) == json_data
-        
+
         # Test deserialization
         reconstructed = LetterResult.model_validate(json_data)
         assert reconstructed == result
@@ -339,7 +334,7 @@ class TestModelSerialization:
             won=False,
             game_over=False
         )
-        
+
         # Test serialization
         json_data = state.model_dump()
         assert json_data["target_word"] == "HELLO"
@@ -348,7 +343,7 @@ class TestModelSerialization:
         assert len(json_data["guess_results"]) == 1
         assert len(json_data["guess_results"][0]) == 5
         assert json_data["status"] == "in_progress"
-        
+
         # Test deserialization
         reconstructed = GameState.model_validate(json_data)
         assert reconstructed == state
@@ -360,7 +355,7 @@ class TestModelSerialization:
             total_cost_usd=0.02,
             response_time_ms=250.5
         )
-        
+
         json_data = stats.model_dump()
         assert json_data == {
             "total_tokens_input": 100,
@@ -369,14 +364,14 @@ class TestModelSerialization:
             "total_cost_usd": 0.02,
             "response_time_ms": 250.5
         }
-        
+
         reconstructed = UsageStats.model_validate(json_data)
         assert reconstructed == stats
 
     def test_game_metadata_serialization(self):
         start_time = datetime(2024, 1, 1, 10, 0, 0)
         end_time = datetime(2024, 1, 1, 10, 5, 0)
-        
+
         metadata = GameMetadata(
             model="gpt-4o-mini",
             template="simple",
@@ -387,7 +382,7 @@ class TestModelSerialization:
             date="2024-01-01",
             total_invalid_attempts=1
         )
-        
+
         json_data = metadata.model_dump()
         assert json_data["model"] == "gpt-4o-mini"
         assert json_data["template"] == "simple"
@@ -395,7 +390,7 @@ class TestModelSerialization:
         assert json_data["duration_seconds"] == pytest.approx(300.0)
         assert json_data["date"] == "2024-01-01"
         assert json_data["total_invalid_attempts"] == 1
-        
+
         reconstructed = GameMetadata.model_validate(json_data)
         assert reconstructed == metadata
 
@@ -403,7 +398,7 @@ class TestModelSerialization:
         # Create a complete game result
         start_time = datetime(2024, 1, 1, 10, 0, 0)
         end_time = datetime(2024, 1, 1, 10, 5, 0)
-        
+
         game_state = GameState(
             target_word="HELLO",
             guesses=["WORLD", "HELLO"],
@@ -430,7 +425,7 @@ class TestModelSerialization:
             won=True,
             game_over=True
         )
-        
+
         metadata = GameMetadata(
             model="gpt-4o-mini",
             template="simple",
@@ -440,13 +435,13 @@ class TestModelSerialization:
             end_time=end_time,
             date="2024-01-01"
         )
-        
+
         result = GameResult(
             success=True,
             game_state=game_state,
             metadata=metadata
         )
-        
+
         # Test full serialization
         json_data = result.model_dump()
         assert json_data["success"] is True
@@ -454,11 +449,11 @@ class TestModelSerialization:
         assert json_data["game_state"]["target_word"] == "HELLO"
         assert json_data["game_state"]["won"] is True
         assert json_data["metadata"]["model"] == "gpt-4o-mini"
-        
+
         # Test deserialization
         reconstructed = GameResult.model_validate(json_data)
         assert reconstructed == result
-        
+
         # Test convenience properties work after deserialization
         assert reconstructed.won is True
         assert reconstructed.target_word == "HELLO"

@@ -1,7 +1,7 @@
 import pytest
 
 from utils.logging_config import get_logger
-from wordle.prompt_templates import PromptTemplateFactory, SimplePromptTemplate, JsonPromptTemplate
+from wordle.prompt_templates import JsonPromptTemplate, PromptTemplateFactory, SimplePromptTemplate
 
 logger = get_logger(__name__)
 

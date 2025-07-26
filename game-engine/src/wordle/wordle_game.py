@@ -3,9 +3,9 @@ from typing import Optional
 
 import requests
 
+from utils.logging_config import get_logger
 from wordle.enums import GameStatus, LetterStatus
 from wordle.word_list import WordList
-from utils.logging_config import get_logger
 
 logger = get_logger(__name__)
 
@@ -200,6 +200,7 @@ class WordleGame:
 # Example usage and testing
 if __name__ == "__main__":
     from pathlib import Path
+
     from utils.logging_config import configure_logging
     from wordle.response_parser import JsonResponseParser
 
@@ -266,7 +267,7 @@ if __name__ == "__main__":
                 # Show final game state with all reasoning
                 final_state = game.get_game_state()
                 logger.info("Full game reasoning:")
-                for i, (guess, reasoning) in enumerate(zip(final_state['guesses'], final_state['guess_reasoning'])):
+                for i, (guess, reasoning) in enumerate(zip(final_state['guesses'], final_state['guess_reasoning'], strict=False)):
                     logger.info(f"  {i + 1}. {guess}: {reasoning or 'No reasoning provided'}")
                 break
 

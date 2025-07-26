@@ -1,13 +1,13 @@
 """SQLAlchemy database models for Wordle benchmark system."""
 
-from sqlalchemy import String, Integer, Float, Boolean, DateTime, Text, ForeignKey, Date, Index, Numeric
+import uuid
+from datetime import date, datetime
+from typing import List, Optional
+
+from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, Index, Integer, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
-from typing import List, Optional
-from datetime import date, datetime
-import uuid
-
 
 # Constants
 CASCADE_RULES = "all, delete-orphan"
@@ -21,7 +21,7 @@ class Base(DeclarativeBase):
 class Game(Base):
     """Core game data for fast queries and leaderboards."""
     __tablename__ = 'games'
-    
+
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     model_name: Mapped[str] = mapped_column(String(100))
     template_name: Mapped[str] = mapped_column(String(20))  # "simple", "json"
@@ -35,7 +35,7 @@ class Game(Base):
     total_invalid_attempts: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
-    
+
     # Relationships
     turns: Mapped[List["GameTurn"]] = relationship(back_populates="game", cascade=CASCADE_RULES)
     llm_interactions: Mapped[List["LLMInteraction"]] = relationship(back_populates="game", cascade=CASCADE_RULES)
@@ -45,7 +45,7 @@ class Game(Base):
 class GameTurn(Base):
     """Turn-by-turn data for Wordle UI recreation and analysis."""
     __tablename__ = 'game_turns'
-    
+
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     game_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey(GAME_ID_FK, ondelete='CASCADE'))
     turn_number: Mapped[int] = mapped_column(Integer)
@@ -54,7 +54,7 @@ class GameTurn(Base):
     is_correct: Mapped[bool] = mapped_column(Boolean)
     letter_results: Mapped[List[dict]] = mapped_column(JSONB)     # Full letter-by-letter feedback
     created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
-    
+
     # Relationships
     game: Mapped["Game"] = relationship(back_populates="turns")
 
@@ -62,7 +62,7 @@ class GameTurn(Base):
 class LLMInteraction(Base):
     """LLM interaction debugging and performance analysis."""
     __tablename__ = 'llm_interactions'
-    
+
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     game_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey(GAME_ID_FK, ondelete='CASCADE'))
     turn_number: Mapped[int] = mapped_column(Integer)
@@ -72,16 +72,16 @@ class LLMInteraction(Base):
     parse_error_message: Mapped[Optional[str]] = mapped_column(Text)  # If parse failed
     attempt_number: Mapped[int] = mapped_column(Integer)  # Which attempt (1st, 2nd, etc.)
     response_time_ms: Mapped[Optional[int]] = mapped_column(Integer)  # LLM response time
-    
+
     # Usage tracking fields
     prompt_tokens: Mapped[Optional[int]] = mapped_column(Integer)
     completion_tokens: Mapped[Optional[int]] = mapped_column(Integer)
     reasoning_tokens: Mapped[Optional[int]] = mapped_column(Integer)
     total_tokens: Mapped[Optional[int]] = mapped_column(Integer)
     cost_usd: Mapped[Optional[float]] = mapped_column(Numeric(10, 6))
-    
+
     created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
-    
+
     # Relationships
     game: Mapped["Game"] = relationship(back_populates="llm_interactions")
 
@@ -89,14 +89,14 @@ class LLMInteraction(Base):
 class InvalidWordAttempt(Base):
     """Invalid word attempts for retry analysis."""
     __tablename__ = 'invalid_word_attempts'
-    
+
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     game_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey(GAME_ID_FK, ondelete='CASCADE'))
     turn_number: Mapped[int] = mapped_column(Integer)
     attempted_word: Mapped[str] = mapped_column(String(5))
     attempt_number: Mapped[int] = mapped_column(Integer)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
-    
+
     # Relationships
     game: Mapped["Game"] = relationship(back_populates="invalid_attempts")
 
@@ -105,7 +105,7 @@ class GameUsageSummary(Base):
     """Database view for aggregated usage statistics per game."""
     __tablename__ = 'game_usage_summary'
     __table_args__ = {'info': {'is_view': True}}
-    
+
     game_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
     total_tokens_input: Mapped[Optional[int]] = mapped_column(Integer)
     total_tokens_output: Mapped[Optional[int]] = mapped_column(Integer)

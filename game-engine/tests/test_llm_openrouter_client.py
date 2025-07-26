@@ -1,16 +1,17 @@
 import json
 from unittest.mock import Mock, patch
+
 import pytest
 import requests
 
-from llm_integration.openrouter_client import OpenRouterClient
 from llm_integration.llm_client import (
-    LLMError,
-    LLMTimeoutError,
-    LLMRateLimitError,
     LLMAuthenticationError,
-    LLMQuotaExceededError
+    LLMError,
+    LLMQuotaExceededError,
+    LLMRateLimitError,
+    LLMTimeoutError,
 )
+from llm_integration.openrouter_client import OpenRouterClient
 
 
 class TestOpenRouterClient:
@@ -313,13 +314,13 @@ class TestOpenRouterClient:
         result = client.generate_response("test")
 
         assert result == "CRANE"
-        
+
         # Verify usage data is tracked
         usage_stats = client.get_current_usage_stats()
         assert usage_stats["prompt_tokens"] == mock_response.json.return_value["usage"]["prompt_tokens"]
         assert usage_stats["completion_tokens"] == mock_response.json.return_value["usage"]["completion_tokens"]
         assert usage_stats["total_tokens"] == mock_response.json.return_value["usage"]["total_tokens"]
-        
+
         # Verify cost calculation (gpt-4o-mini: $0.15/$0.60 per 1M tokens)
         # Expected: (100/1M * 0.15) + (50/1M * 0.60) = 0.000015 + 0.00003 = 0.000045
         expected_cost = (100/1_000_000 * 0.15) + (50/1_000_000 * 0.60)
@@ -329,7 +330,7 @@ class TestOpenRouterClient:
     def test_cost_calculation_with_reasoning_tokens(self, mock_post):
         """Test cost calculation when reasoning tokens are present (e.g., O3 model)"""
         client = OpenRouterClient(api_key="fake-key", model="openai/o3")
-        
+
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.json.return_value = {
@@ -346,14 +347,14 @@ class TestOpenRouterClient:
         result = client.generate_response("test")
 
         assert result == "CRANE"
-        
+
         # Verify usage data tracking
         usage_stats = client.get_current_usage_stats()
         assert usage_stats["prompt_tokens"] == mock_response.json.return_value["usage"]["prompt_tokens"]
         assert usage_stats["completion_tokens"] == mock_response.json.return_value["usage"]["completion_tokens"]
         assert usage_stats["reasoning_tokens"] == mock_response.json.return_value["usage"]["reasoning_tokens"]
         assert usage_stats["total_tokens"] == mock_response.json.return_value["usage"]["total_tokens"]
-        
+
         # Verify cost calculation (O3: $2.0/$8.0 per 1M tokens)
         # Expected: (500/1M * 2.0) + ((50 + 2000)/1M * 8.0) = 0.001 + 0.0164 = 0.0174
         expected_cost = (500/1_000_000 * 2.0) + ((50 + 2000)/1_000_000 * 8.0)
@@ -373,7 +374,7 @@ class TestOpenRouterClient:
         result = client.generate_response("test")
 
         assert result == "CRANE"
-        
+
         # All usage metrics should be reset to 0
         usage_stats = client.get_current_usage_stats()
         assert usage_stats["prompt_tokens"] == 0
@@ -386,7 +387,7 @@ class TestOpenRouterClient:
     def test_cost_calculation_unknown_model_raises_error(self, mock_post):
         """Test that unknown models raise pricing errors"""
         client = OpenRouterClient(api_key="fake-key", model="unknown/model")
-        
+
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.json.return_value = {

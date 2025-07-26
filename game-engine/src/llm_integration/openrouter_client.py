@@ -5,12 +5,12 @@ from typing import Optional
 import requests
 
 from llm_integration.llm_client import (
+    LLMAuthenticationError,
     LLMClient,
     LLMError,
-    LLMTimeoutError,
+    LLMQuotaExceededError,
     LLMRateLimitError,
-    LLMAuthenticationError,
-    LLMQuotaExceededError
+    LLMTimeoutError,
 )
 from llm_integration.pricing import ModelPricing
 from utils.logging_config import get_logger
@@ -43,7 +43,7 @@ class OpenRouterClient(LLMClient):
         self.api_key = api_key
         self.model = model
         self.timeout = timeout or self.DEFAULT_TIMEOUT
-        
+
         # Usage tracking for current call
         self._last_prompt_tokens = 0
         self._last_completion_tokens = 0
@@ -85,10 +85,10 @@ class OpenRouterClient(LLMClient):
                 # Successfully got a good response
                 content, usage_data = self._extract_content_and_usage_from_response(response)
                 response_time = time.time() - start_time
-                
+
                 # Track usage statistics
                 self._update_usage_stats(usage_data, response_time)
-                
+
                 logger.debug(f"Successfully received response from {self.model}")
                 logger.debug(f"LLM response time: {response_time:.2f}s")
                 return content.strip()
@@ -189,10 +189,10 @@ class OpenRouterClient(LLMClient):
             content = data["choices"][0]["message"]["content"]
             if not content:
                 raise LLMError("Empty response from API")
-                
+
             # Extract usage data (may be missing in some responses)
             usage_data = data.get("usage", {})
-            
+
             return content, usage_data
         except (KeyError, IndexError) as e:
             raise LLMError(f"Unexpected API response structure: {e}")
@@ -214,7 +214,7 @@ class OpenRouterClient(LLMClient):
         Return the configured model name
         """
         return self.model
-    
+
     def get_current_usage_stats(self) -> dict:
         """Get usage statistics from the most recent API call"""
         return {
@@ -230,14 +230,14 @@ class OpenRouterClient(LLMClient):
         """Update usage statistics for the current API call"""
         # Store individual call data (not accumulated)
         self._last_response_time_ms = response_time * 1000  # Convert to ms
-        
+
         # Extract token counts from usage data (if available)
         if usage_data:
             self._last_prompt_tokens = usage_data.get("prompt_tokens", 0)
             self._last_completion_tokens = usage_data.get("completion_tokens", 0)
             self._last_reasoning_tokens = usage_data.get("reasoning_tokens", 0)
             self._last_total_tokens = usage_data.get("total_tokens", 0)
-            
+
             # Calculate cost for this call
             pricing_info = ModelPricing.get_model_pricing(self.model)
             self._last_cost_usd = pricing_info.calculate_cost(self._last_prompt_tokens, self._last_completion_tokens, self._last_reasoning_tokens)

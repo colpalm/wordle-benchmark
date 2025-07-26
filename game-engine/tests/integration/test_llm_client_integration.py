@@ -1,9 +1,10 @@
 import os
+
 import pytest
 from dotenv import load_dotenv
 
-from llm_integration.openrouter_client import OpenRouterClient
 from llm_integration.llm_client import LLMError
+from llm_integration.openrouter_client import OpenRouterClient
 
 load_dotenv()
 

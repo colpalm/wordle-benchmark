@@ -1,4 +1,5 @@
 import pytest
+
 from llm_integration.pricing import ModelPricing
 
 
@@ -8,10 +9,10 @@ class TestModelPricing:
     def test_calculate_cost_basic(self):
         """Test basic cost calculation with prompt and completion tokens"""
         pricing = ModelPricing(input_cost_per_1m=1.0, output_cost_per_1m=2.0)
-        
+
         # 100,000 prompt tokens + 50,000 completion tokens
         cost = pricing.calculate_cost(prompt_tokens=100_000, completion_tokens=50_000)
-        
+
         # Expected: (100,000 / 1,000,000) * 1.0 + (50,000 / 1,000,000) * 2.0
         # = 0.1 + 0.1 = 0.2
         expected = (100_000 / 1_000_000) * 1.0 + (50_000 / 1_000_000) * 2.0
@@ -20,14 +21,14 @@ class TestModelPricing:
     def test_calculate_cost_with_reasoning_tokens(self):
         """Test cost calculation including reasoning tokens"""
         pricing = ModelPricing(input_cost_per_1m=1.0, output_cost_per_1m=3.0)
-        
+
         # 100,000 prompt + 30,000 completion + 20,000 reasoning tokens
         cost = pricing.calculate_cost(
-            prompt_tokens=100_000, 
-            completion_tokens=30_000, 
+            prompt_tokens=100_000,
+            completion_tokens=30_000,
             reasoning_tokens=20_000
         )
-        
+
         # Expected: (100,000 / 1,000,000) * 1.0 + ((30,000 + 20,000) / 1,000,000) * 3.0
         # = 0.1 + 0.15 = 0.25
         expected = (100_000 / 1_000_000) * 1.0 + ((30_000 + 20_000) / 1_000_000) * 3.0
@@ -52,7 +53,7 @@ class TestModelPricing:
     def test_get_model_pricing_known_models(self, model, expected_input, expected_output):
         """Test getting pricing for all known models"""
         pricing = ModelPricing.get_model_pricing(model)
-        
+
         assert pricing.input_cost_per_1m == expected_input
         assert pricing.output_cost_per_1m == expected_output
 
@@ -65,7 +66,7 @@ class TestModelPricing:
         """Test that error message includes list of available models"""
         with pytest.raises(ValueError) as exc_info:
             ModelPricing.get_model_pricing("unknown/model")
-        
+
         error_message = str(exc_info.value)
         assert "Available:" in error_message
         assert "openai/gpt-4o-mini" in error_message

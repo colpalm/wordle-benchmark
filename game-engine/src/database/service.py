@@ -1,24 +1,24 @@
 """Database service for Wordle benchmark game result persistence."""
 
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date, UTC
-from uuid import UUID
 import logging
+from datetime import UTC, date, datetime
+from typing import Any, Dict, List, Optional
+from uuid import UUID
 
-from sqlalchemy import create_engine, Engine, select
-from sqlalchemy.orm import sessionmaker, Session, selectinload
+from sqlalchemy import Engine, create_engine, select
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session, selectinload, sessionmaker
 
-from wordle.models import GameResult
-from database.models import Base, Game, GameTurn, LLMInteraction, InvalidWordAttempt
 from database.config import DatabaseConfig
+from database.models import Base, Game, GameTurn, InvalidWordAttempt, LLMInteraction
+from wordle.models import GameResult
 
 logger = logging.getLogger(__name__)
 
 
 class GameDatabaseService:
     """Service for persisting and querying Wordle game results."""
-    
+
     def __init__(self, config: DatabaseConfig):
         """Initialize database service with configuration.
         
@@ -31,7 +31,7 @@ class GameDatabaseService:
             echo=config.echo_sql
         )
         self.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=self.engine) # NOSONAR
-    
+
     def create_tables(self) -> None:
         """Create all database tables. Use for testing or initial setup."""
         try:
@@ -40,7 +40,7 @@ class GameDatabaseService:
         except SQLAlchemyError as e:
             logger.error(f"Failed to create tables: {e}")
             raise
-    
+
     def drop_tables(self) -> None:
         """Drop all database tables. Use for testing cleanup."""
         try:
@@ -49,8 +49,8 @@ class GameDatabaseService:
         except SQLAlchemyError as e:
             logger.error(f"Failed to drop tables: {e}")
             raise
-    
-    def save_game_result(self, game_result: GameResult, 
+
+    def save_game_result(self, game_result: GameResult,
                         llm_interactions: Optional[List[Dict[str, Any]]] = None,
                         invalid_word_attempts: Optional[List[Dict[str, Any]]] = None) -> UUID:
         """Save a complete game result to the database.
@@ -72,27 +72,27 @@ class GameDatabaseService:
                 game = GameDatabaseService._convert_to_game_model(game_result)
                 session.add(game)
                 session.flush()  # Get the generated game ID
-                
+
                 # Add game turns
                 GameDatabaseService._add_game_turns(session, game.id, game_result)
-                
+
                 # Add LLM interactions if provided
                 if llm_interactions:
                     GameDatabaseService._add_llm_interactions(session, game.id, llm_interactions)
-                
+
                 # Add invalid word attempts
                 if invalid_word_attempts:
                     GameDatabaseService._add_invalid_word_attempts(session, game.id, invalid_word_attempts)
-                
+
                 session.commit()
                 logger.info(f"Game result saved successfully with ID: {game.id}")
                 return game.id
-                
+
             except SQLAlchemyError as e:
                 session.rollback()
                 logger.error(f"Failed to save game result: {e}")
                 raise
-    
+
     def get_game_by_id(self, game_id: UUID) -> Optional[Game]:
         """Retrieve a game by its ID with all relationships loaded.
         
@@ -117,7 +117,7 @@ class GameDatabaseService:
             except SQLAlchemyError as e:
                 logger.error(f"Failed to retrieve game {game_id}: {e}")
                 raise
-    
+
     def get_games_by_date(self, target_date: date) -> List[Game]:
         """Retrieve all games for a specific date.
         
@@ -135,7 +135,7 @@ class GameDatabaseService:
             except SQLAlchemyError as e:
                 logger.error(f"Failed to retrieve games for date {target_date}: {e}")
                 raise
-    
+
     def get_games_by_model(self, model_name: str, limit: Optional[int] = None) -> List[Game]:
         """Retrieve games by model name.
         
@@ -162,10 +162,10 @@ class GameDatabaseService:
         """Convert Pydantic GameResult to SQLAlchemy Game model."""
         game_state = game_result.game_state
         metadata = game_result.metadata
-        
+
         # Parse date string to date object
         game_date = datetime.strptime(metadata.date, "%Y-%m-%d").date()
-        
+
         return Game(
             model_name=metadata.model,
             template_name=metadata.template,
@@ -185,13 +185,13 @@ class GameDatabaseService:
     def _add_game_turns(session: Session, game_id: UUID, game_result: GameResult) -> None:
         """Add game turns to the database."""
         game_state = game_result.game_state
-        
+
         for turn_number, guess in enumerate(game_state.guesses, 1):
             # Get reasoning if available
             reasoning = None
             if (turn_number - 1) < len(game_state.guess_reasoning):
                 reasoning = game_state.guess_reasoning[turn_number - 1]
-            
+
             # Get letter results
             letter_results = []
             if (turn_number - 1) < len(game_state.guess_results):
@@ -203,10 +203,10 @@ class GameDatabaseService:
                     }
                     for lr in game_state.guess_results[turn_number - 1]
                 ]
-            
+
             # Check if this guess was correct
             is_correct = guess.lower() == game_state.target_word.lower()
-            
+
             turn = GameTurn(
                 game_id=game_id,
                 turn_number=turn_number,
@@ -216,7 +216,7 @@ class GameDatabaseService:
                 letter_results=letter_results
             )
             session.add(turn)
-    
+
     @staticmethod
     def _add_llm_interactions(session: Session, game_id: UUID,
                             llm_interactions: List[Dict[str, Any]]) -> None:
@@ -238,7 +238,7 @@ class GameDatabaseService:
                 cost_usd=interaction_data.get('cost_usd')
             )
             session.add(interaction)
-    
+
     @staticmethod
     def _add_invalid_word_attempts(session: Session, game_id: UUID,
                                  invalid_word_attempts: List[Dict[str, Any]]) -> None:

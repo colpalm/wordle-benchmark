@@ -1,12 +1,13 @@
 """Integration tests for database service using testcontainers."""
 
-import pytest
 import os
-from datetime import datetime, date, UTC
+from datetime import UTC, date, datetime
+
+import pytest
 
 from database.service import GameDatabaseService
-from wordle.models import GameResult, GameState, GameMetadata, LetterResult, UsageStats
 from wordle.enums import GameStatus, LetterStatus
+from wordle.models import GameMetadata, GameResult, GameState, LetterResult
 
 
 @pytest.fixture(scope="session")
@@ -14,7 +15,7 @@ def postgres_container():
     """PostgreSQL container fixture using testcontainers."""
     try:
         from testcontainers.postgres import PostgresContainer
-        
+
         with PostgresContainer("postgres:15") as postgres:
             # Wait for the container to be ready
             postgres.start()
@@ -29,13 +30,13 @@ def db_service(postgres_container, db_config):
     # Set the test database URL for our config
     test_url = postgres_container.get_connection_url()
     os.environ['TEST_DATABASE_URL'] = test_url
-    
+
     # Create service and tables
     service = GameDatabaseService(db_config)
     service.create_tables()
-    
+
     yield service
-    
+
     # Cleanup
     service.drop_tables()
     if 'TEST_DATABASE_URL' in os.environ:
@@ -45,17 +46,17 @@ def db_service(postgres_container, db_config):
 @pytest.mark.integration
 class TestGameDatabaseService:
     """Integration tests for GameDatabaseService."""
-    
+
     def test_create_and_drop_tables(self, db_service):
         """Test table creation and cleanup."""
         # Tables should already be created by fixture
         # Just verify the service exists
         assert db_service is not None
-        
+
         # Drop and recreate to test the methods
         db_service.drop_tables()
         db_service.create_tables()
-    
+
     def test_save_simple_game_result(self, db_service):
         """Test saving a basic game result."""
         # Create a simple game result
@@ -85,10 +86,10 @@ class TestGameDatabaseService:
             won=True,
             game_over=True
         )
-        
+
         start_time = datetime.now(UTC)
         end_time = datetime.now(UTC)
-        
+
         metadata = GameMetadata(
             model="openai/gpt-4o-mini",
             template="simple",
@@ -99,20 +100,20 @@ class TestGameDatabaseService:
             date="2024-01-15",
             total_invalid_attempts=0
         )
-        
+
         game_result = GameResult(
             success=True,
             game_state=game_state,
             metadata=metadata,
             error=None
         )
-        
+
         # Save the game result
         game_id = db_service.save_game_result(game_result)
-        
+
         # Verify it was saved
         assert game_id is not None
-        
+
         # Retrieve and verify
         saved_game = db_service.get_game_by_id(game_id)
         assert saved_game is not None
@@ -121,7 +122,7 @@ class TestGameDatabaseService:
         assert saved_game.won is True
         assert saved_game.guesses_count == 2
         assert saved_game.status == "won"
-    
+
     def test_save_game_with_invalid_attempts(self, db_service):
         """Test saving a game with invalid word attempts."""
         game_state = GameState(
@@ -143,10 +144,10 @@ class TestGameDatabaseService:
             won=False,
             game_over=False
         )
-        
+
         metadata = GameMetadata(
             model="test-model",
-            template="simple", 
+            template="simple",
             parser="simple",
             duration_seconds=30.0,
             start_time=datetime.now(UTC),
@@ -154,35 +155,35 @@ class TestGameDatabaseService:
             date="2024-01-15",
             total_invalid_attempts=2
         )
-        
+
         game_result = GameResult(
             success=True,
             game_state=game_state,
             metadata=metadata
         )
-        
+
         # Prepare invalid word attempts in consolidated structure
         invalid_word_attempts = [
             {"word": "XYZZZ", "turn_number": 1, "attempt_number": 1},
             {"word": "QWRTY", "turn_number": 1, "attempt_number": 2}
         ]
-        
+
         # Save with invalid attempts
         game_id = db_service.save_game_result(game_result, None, invalid_word_attempts)
-        
+
         # Verify
         saved_game = db_service.get_game_by_id(game_id)
         assert saved_game.total_invalid_attempts == 2
-        
+
         # SQLAlchemy relationships are iterable at runtime despite type warnings
         assert saved_game.total_invalid_attempts == 2
         assert saved_game.invalid_attempts[0].attempted_word == "XYZZZ"
         assert saved_game.invalid_attempts[1].attempted_word == "QWRTY"
-    
+
     def test_get_games_by_date(self, db_service):
         """Test retrieving games by date."""
         target_date = date(2024, 1, 15)
-        
+
         # Create two games for the same date
         for i in range(2):
             game_state = GameState(
@@ -199,34 +200,34 @@ class TestGameDatabaseService:
                 won=False,
                 game_over=False
             )
-            
+
             metadata = GameMetadata(
                 model=f"model-{i}",
                 template="simple",
-                parser="simple", 
+                parser="simple",
                 duration_seconds=30.0,
                 start_time=datetime.now(UTC),
                 end_time=datetime.now(UTC),
                 date="2024-01-15"
             )
-            
+
             game_result = GameResult(
                 success=True,
                 game_state=game_state,
                 metadata=metadata
             )
-            
+
             db_service.save_game_result(game_result)
-        
+
         # Retrieve games by date
         games = db_service.get_games_by_date(target_date)
         assert len(games) == 2
         assert all(game.date == target_date for game in games)
-    
+
     def test_get_games_by_model(self, db_service):
         """Test retrieving games by model name."""
         model_name = "test-model"
-        
+
         # Create games with different models
         for i, model in enumerate([model_name, "other-model", model_name]):
             game_state = GameState(
@@ -243,7 +244,7 @@ class TestGameDatabaseService:
                 won=False,
                 game_over=False
             )
-            
+
             metadata = GameMetadata(
                 model=model,
                 template="simple",
@@ -253,20 +254,20 @@ class TestGameDatabaseService:
                 end_time=datetime.now(UTC),
                 date="2024-01-15"
             )
-            
+
             game_result = GameResult(
                 success=True,
                 game_state=game_state,
                 metadata=metadata
             )
-            
+
             db_service.save_game_result(game_result)
-        
+
         # Retrieve games by model
         games = db_service.get_games_by_model(model_name)
         assert len(games) == 2
         assert all(game.model_name == model_name for game in games)
-    
+
     def test_save_game_with_llm_interactions(self, db_service):
         """Test saving a game with LLM interactions and accessing them."""
         game_state = GameState(
@@ -288,7 +289,7 @@ class TestGameDatabaseService:
             won=False,
             game_over=False
         )
-        
+
         metadata = GameMetadata(
             model="test-model",
             template="json",
@@ -298,13 +299,13 @@ class TestGameDatabaseService:
             end_time=datetime.now(UTC),
             date="2024-01-15"
         )
-        
+
         game_result = GameResult(
             success=True,
             game_state=game_state,
             metadata=metadata
         )
-        
+
         # Create LLM interactions data
         llm_interactions = [
             {
@@ -316,17 +317,17 @@ class TestGameDatabaseService:
                 "response_time_ms": 1500
             }
         ]
-        
+
         # Save with LLM interactions
         game_id = db_service.save_game_result(game_result, llm_interactions)
-        
+
         # Verify LLM interactions are accessible
         saved_game = db_service.get_game_by_id(game_id)
         assert saved_game is not None
-        
-        # SQLAlchemy relationships are iterable at runtime despite type warnings  
+
+        # SQLAlchemy relationships are iterable at runtime despite type warnings
         assert len(saved_game.llm_interactions) == 1
-        
+
         interaction = saved_game.llm_interactions[0]
         assert interaction.turn_number == 1
         assert interaction.prompt_text == "What is your first guess?"

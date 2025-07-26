@@ -7,10 +7,10 @@ Create Date: 2025-07-11 21:15:29.517280
 """
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = '27f9b6140e48'
@@ -39,7 +39,7 @@ def upgrade() -> None:
         sa.Column('completed_at', sa.DateTime(), nullable=True),
         sa.PrimaryKeyConstraint('id')
     )
-    
+
     # Create game_turns table
     op.create_table('game_turns',
         sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
@@ -53,7 +53,7 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(['game_id'], ['games.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('id')
     )
-    
+
     # Create llm_interactions table
     op.create_table('llm_interactions',
         sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
@@ -75,7 +75,7 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(['game_id'], ['games.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('id')
     )
-    
+
     # Create invalid_word_attempts table
     op.create_table('invalid_word_attempts',
         sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
@@ -87,7 +87,7 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(['game_id'], ['games.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('id')
     )
-    
+
     # Create indexes
     op.create_index('idx_games_daily_active', 'games', ['model_name', 'date'])
     op.create_index('idx_games_date_status', 'games', ['date', 'status', 'won'])
@@ -96,7 +96,7 @@ def upgrade() -> None:
     op.create_index('idx_game_turns_game_id', 'game_turns', ['game_id', 'turn_number'])
     op.create_index('idx_llm_interactions_game_id', 'llm_interactions', ['game_id', 'turn_number'])
     op.create_index('idx_invalid_attempts_game_id', 'invalid_word_attempts', ['game_id'])
-    
+
     # Create game usage summary view
     op.execute("""
         CREATE VIEW game_usage_summary AS
@@ -119,7 +119,7 @@ def downgrade() -> None:
     """Downgrade schema."""
     # Drop view first
     op.execute("DROP VIEW IF EXISTS game_usage_summary;")
-    
+
     # Drop indexes
     op.drop_index('idx_invalid_attempts_game_id', table_name='invalid_word_attempts')
     op.drop_index('idx_llm_interactions_game_id', table_name='llm_interactions')
@@ -128,7 +128,7 @@ def downgrade() -> None:
     op.drop_index('idx_games_model_performance', table_name='games')
     op.drop_index('idx_games_date_status', table_name='games')
     op.drop_index('idx_games_daily_active', table_name='games')
-    
+
     # Drop tables (in reverse order due to foreign keys)
     op.drop_table('invalid_word_attempts')
     op.drop_table('llm_interactions')

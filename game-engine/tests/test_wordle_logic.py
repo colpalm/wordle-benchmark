@@ -1,11 +1,10 @@
-import tempfile
-from pathlib import Path
 
 import pytest
 
-from wordle.enums import LetterStatus, GameStatus
+from wordle.enums import GameStatus, LetterStatus
 from wordle.word_list import WordList
 from wordle.wordle_game import WordleGame
+
 
 @pytest.fixture
 def sample_game(word_list: WordList) -> WordleGame:

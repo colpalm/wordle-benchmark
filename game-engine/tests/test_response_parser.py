@@ -1,7 +1,6 @@
-import json
 import pytest
 
-from wordle.response_parser import SimpleResponseParser, JsonResponseParser, ResponseParserFactory
+from wordle.response_parser import JsonResponseParser, ResponseParserFactory, SimpleResponseParser
 
 
 class TestExtractQuotedWord:

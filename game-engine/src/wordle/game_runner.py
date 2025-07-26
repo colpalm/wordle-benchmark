@@ -9,7 +9,7 @@ from llm_integration.llm_client import LLMClient
 from llm_integration.openrouter_client import OpenRouterClient
 from utils.logging_config import get_logger
 from wordle.enums import GameStatus, LetterStatus
-from wordle.models import GameResult, GameState, GameMetadata, LetterResult, UsageStats
+from wordle.models import GameMetadata, GameResult, GameState, LetterResult, UsageStats
 from wordle.prompt_templates import PromptTemplate, PromptTemplateFactory
 from wordle.response_parser import ResponseParser, ResponseParserFactory
 from wordle.word_list import WordList
@@ -69,7 +69,7 @@ class GameRunner:
 
         # Track retry information for this game session (all invalid words tried)
         self.invalid_word_attempts: list[dict[str, Any]] = []  # Word + turn info
-        
+
         # Track LLM interactions for database persistence
         self.llm_interactions: list[dict[str, Any]] = []
         self._current_interaction: dict[str, Any] | None = None
@@ -153,12 +153,12 @@ class GameRunner:
         raw_response = self.llm_client.generate_response(prompt)
         logger.debug(f"Raw response: '{raw_response}'")
         return raw_response
-    
+
     def _initialize_interaction_data(self, prompt: str, raw_response: str) -> None:
         """Initialize interaction data for database persistence."""
         # Get usage stats from LLM client as raw dict
         raw_usage_stats = self.llm_client.get_current_usage_stats()
-        
+
         # Convert to type-safe UsageStats model for validation
         usage_stats = UsageStats(
             total_tokens_input=raw_usage_stats.get("prompt_tokens", 0),
@@ -167,7 +167,7 @@ class GameRunner:
             total_cost_usd=raw_usage_stats.get("cost_usd", 0.0),
             response_time_ms=raw_usage_stats.get("response_time_ms", 0.0)
         )
-        
+
         # Convert back to dict format for LLMInteraction storage
         self._current_interaction = {
             "prompt_text": prompt,
@@ -217,7 +217,7 @@ class GameRunner:
                     "parse_error_message": str(parse_error),
                     "attempt_number": attempt_state["parsing"]
                 })
-            
+
             if self._should_retry_parsing(attempt_state["parsing"], parse_error, raw_response):
                 attempt_state["parsing"] += 1  # Increment for next attempt
                 return None, None  # Signal to continue retry loop
@@ -340,7 +340,7 @@ class GameRunner:
 
         # Convert dictionary game state to Pydantic GameState
         game_state = self._convert_game_state_to_pydantic(game_state_dict)
-        
+
         # Create metadata
         metadata = GameMetadata(
             model=self.llm_client.get_model_name(),
@@ -361,7 +361,7 @@ class GameRunner:
             game_state=game_state,
             metadata=metadata
         )
-        
+
         # Save to database if service is provided
         if self.db_service:
             try:
@@ -369,7 +369,7 @@ class GameRunner:
                 logger.debug("Game result saved to database")
             except Exception as e:
                 logger.warning(f"Failed to save game result to database: {e}")
-        
+
         return result
 
     def _convert_game_state_to_pydantic(self, game_state_dict: dict) -> GameState:
@@ -386,13 +386,13 @@ class GameRunner:
                 )
                 letter_results.append(letter_result)
             pydantic_guess_results.append(letter_results)
-        
+
         # Handle target_word - it might be None during gameplay
         target_word = game_state_dict.get("target_word")
         if not target_word:
             # Game is still in progress, we need the actual target word for the model
             target_word = self.game.target_word
-        
+
         return GameState(
             target_word=target_word,
             guesses=game_state_dict["guesses"],
@@ -457,7 +457,7 @@ class GameRunner:
         logger.info(f"Model: {self.llm_client.get_model_name()}")
 
         logger.info("\n📝 Guess sequence:")
-        for i, (guess, reasoning) in enumerate(zip(game_state["guesses"], game_state["guess_reasoning"])):
+        for i, (guess, reasoning) in enumerate(zip(game_state["guesses"], game_state["guess_reasoning"], strict=False)):
             reasoning_text = reasoning or "No reasoning"
             logger.info(f"  {i + 1}. {guess} - {reasoning_text}")
 
@@ -476,10 +476,10 @@ class GameRunner:
             self._current_interaction.update({
                 "turn_number": self._current_turn_number
             })
-            
+
             # Add to the interactions list
             self.llm_interactions.append(self._current_interaction)
-            
+
             # Clear the current interaction
             self._current_interaction = None
 

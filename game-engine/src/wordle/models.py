@@ -1,10 +1,11 @@
-from pydantic import BaseModel, Field
-from typing import List, Optional
-from datetime import datetime, date
-from decimal import Decimal
-from wordle.enums import LetterStatus, GameStatus
 import uuid
+from datetime import date, datetime
+from decimal import Decimal
+from typing import List, Optional
 
+from pydantic import BaseModel, Field
+
+from wordle.enums import GameStatus, LetterStatus
 
 ## Database-aligned Pydantic models for SQLAlchemy entities ##
 
@@ -125,16 +126,16 @@ class GameResult(BaseModel):
     game_state: Optional[GameState] = None
     metadata: GameMetadata
     error: Optional[str] = None
-    
+
     # Convenience properties
     @property
     def won(self) -> bool:
         return self.game_state.won if self.game_state else False
-    
+
     @property
     def target_word(self) -> str:
         return self.game_state.target_word if self.game_state else None
-    
+
     @property
     def guesses_made(self) -> int:
         return self.game_state.guesses_made if self.game_state else 0
