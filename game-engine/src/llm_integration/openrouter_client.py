@@ -12,6 +12,7 @@ from llm_integration.llm_client import (
     LLMAuthenticationError,
     LLMQuotaExceededError
 )
+from llm_integration.pricing import ModelPricing
 from utils.logging_config import get_logger
 
 logger = get_logger(__name__)
@@ -237,11 +238,10 @@ class OpenRouterClient(LLMClient):
             self._last_reasoning_tokens = usage_data.get("reasoning_tokens", 0)
             self._last_total_tokens = usage_data.get("total_tokens", 0)
             
-            # Calculate cost for this call (basic implementation)
-            total_tokens = usage_data.get("total_tokens", 0)
-            # Rough estimate: $0.001 per 1K tokens (varies by model)
-            # TODO: Implement actual logic for each model
-            self._last_cost_usd = (total_tokens / 1000) * 0.001
+            # Calculate cost for this call
+            pricing_info = ModelPricing.get_model_pricing(self.model)
+            self._last_cost_usd = pricing_info.calculate_cost(self._last_prompt_tokens, self._last_completion_tokens, self._last_reasoning_tokens)
+
         else:
             # Reset if no usage data available
             self._last_prompt_tokens = 0
