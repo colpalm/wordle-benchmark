@@ -19,11 +19,11 @@ class TestOpenRouterClient:
     @pytest.fixture
     def client(self):
         """Returns an OpenRouterClient instance for testing"""
-        return OpenRouterClient(api_key="fake-key", model="gpt-4o-mini")
+        return OpenRouterClient(api_key="fake-key", model="openai/gpt-4o-mini")
 
     def test_get_model_name(self, client):
         """Return the model name"""
-        assert client.get_model_name() == "gpt-4o-mini"
+        assert client.get_model_name() == "openai/gpt-4o-mini"
 
     @pytest.mark.parametrize("input_content,expected_output", [
         ("CRANE", "CRANE"),  # Simple response
@@ -65,7 +65,7 @@ class TestOpenRouterClient:
 
         # Check payload structure
         payload = call_args[1]["json"]
-        assert payload["model"] == "gpt-4o-mini"
+        assert payload["model"] == "openai/gpt-4o-mini"
         assert payload["messages"][0]["role"] == "user"
         assert payload["messages"][0]["content"] == "What's your guess?"
         assert "temperature" in payload
@@ -272,7 +272,7 @@ class TestOpenRouterClient:
             mock_response.status_code = 401
             mock_post.return_value = mock_response
 
-            client = OpenRouterClient(api_key="fake-key", model="gpt-4o-mini")
+            client = OpenRouterClient(api_key="fake-key", model="openai/gpt-4o-mini")
 
             with pytest.raises(LLMAuthenticationError):
                 client.generate_response("test")
@@ -287,10 +287,117 @@ class TestOpenRouterClient:
             mock_response.status_code = 402
             mock_post.return_value = mock_response
 
-            client = OpenRouterClient(api_key="fake-key", model="gpt-4o-mini")
+            client = OpenRouterClient(api_key="fake-key", model="openai/gpt-4o-mini")
 
             with pytest.raises(LLMQuotaExceededError):
                 client.generate_response("test")
 
             # Should only be called once (no retries)
             assert mock_post.call_count == 1
+
+    @patch('llm_integration.openrouter_client.requests.post')
+    def test_cost_calculation_with_usage_data(self, mock_post, client):
+        """Test that cost is calculated correctly when usage data is provided"""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "choices": [{"message": {"content": "CRANE"}}],
+            "usage": {
+                "prompt_tokens": 100,
+                "completion_tokens": 50,
+                "total_tokens": 150
+            }
+        }
+        mock_post.return_value = mock_response
+
+        result = client.generate_response("test")
+
+        assert result == "CRANE"
+        
+        # Verify usage data is tracked
+        usage_stats = client.get_current_usage_stats()
+        assert usage_stats["prompt_tokens"] == mock_response.json.return_value["usage"]["prompt_tokens"]
+        assert usage_stats["completion_tokens"] == mock_response.json.return_value["usage"]["completion_tokens"]
+        assert usage_stats["total_tokens"] == mock_response.json.return_value["usage"]["total_tokens"]
+        
+        # Verify cost calculation (gpt-4o-mini: $0.15/$0.60 per 1M tokens)
+        # Expected: (100/1M * 0.15) + (50/1M * 0.60) = 0.000015 + 0.00003 = 0.000045
+        expected_cost = (100/1_000_000 * 0.15) + (50/1_000_000 * 0.60)
+        assert usage_stats["cost_usd"] == pytest.approx(expected_cost)
+
+    @patch('llm_integration.openrouter_client.requests.post')
+    def test_cost_calculation_with_reasoning_tokens(self, mock_post):
+        """Test cost calculation when reasoning tokens are present (e.g., O3 model)"""
+        client = OpenRouterClient(api_key="fake-key", model="openai/o3")
+        
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "choices": [{"message": {"content": "CRANE"}}],
+            "usage": {
+                "prompt_tokens": 500,
+                "completion_tokens": 50,
+                "reasoning_tokens": 2000,
+                "total_tokens": 2550
+            }
+        }
+        mock_post.return_value = mock_response
+
+        result = client.generate_response("test")
+
+        assert result == "CRANE"
+        
+        # Verify usage data tracking
+        usage_stats = client.get_current_usage_stats()
+        assert usage_stats["prompt_tokens"] == mock_response.json.return_value["usage"]["prompt_tokens"]
+        assert usage_stats["completion_tokens"] == mock_response.json.return_value["usage"]["completion_tokens"]
+        assert usage_stats["reasoning_tokens"] == mock_response.json.return_value["usage"]["reasoning_tokens"]
+        assert usage_stats["total_tokens"] == mock_response.json.return_value["usage"]["total_tokens"]
+        
+        # Verify cost calculation (O3: $2.0/$8.0 per 1M tokens)
+        # Expected: (500/1M * 2.0) + ((50 + 2000)/1M * 8.0) = 0.001 + 0.0164 = 0.0174
+        expected_cost = (500/1_000_000 * 2.0) + ((50 + 2000)/1_000_000 * 8.0)
+        assert usage_stats["cost_usd"] == pytest.approx(expected_cost)
+
+    @patch('llm_integration.openrouter_client.requests.post')
+    def test_cost_calculation_no_usage_data(self, mock_post, client):
+        """Test that cost is reset when no usage data is provided"""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "choices": [{"message": {"content": "CRANE"}}]
+            # No usage data
+        }
+        mock_post.return_value = mock_response
+
+        result = client.generate_response("test")
+
+        assert result == "CRANE"
+        
+        # All usage metrics should be reset to 0
+        usage_stats = client.get_current_usage_stats()
+        assert usage_stats["prompt_tokens"] == 0
+        assert usage_stats["completion_tokens"] == 0
+        assert usage_stats["reasoning_tokens"] == 0
+        assert usage_stats["total_tokens"] == 0
+        assert usage_stats["cost_usd"] == pytest.approx(0.0)
+
+    @patch('llm_integration.openrouter_client.requests.post')
+    def test_cost_calculation_unknown_model_raises_error(self, mock_post):
+        """Test that unknown models raise pricing errors"""
+        client = OpenRouterClient(api_key="fake-key", model="unknown/model")
+        
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "choices": [{"message": {"content": "CRANE"}}],
+            "usage": {
+                "prompt_tokens": 100,
+                "completion_tokens": 50,
+                "total_tokens": 150
+            }
+        }
+        mock_post.return_value = mock_response
+
+        with pytest.raises(ValueError, match="Pricing not available for model: unknown/model"):
+            client.generate_response("test")
