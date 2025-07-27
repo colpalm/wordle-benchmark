@@ -23,25 +23,27 @@ class GameRunner:
     GameRunner that orchestrates a complete Wordle game session.
     """
 
-    MODELS_TO_RUN = ["openai/gpt-4o-mini",
-                     "openai/o3",
-                     "anthropic/claude-sonnet-4",
-                     "anthropic/claude-opus-4",
-                     "google/gemini-2.5-flash",
-                     "google/gemini-2.5-pro"]
+    MODELS_TO_RUN = [
+        "openai/gpt-4o-mini",
+        "openai/o3",
+        "anthropic/claude-sonnet-4",
+        "anthropic/claude-opus-4",
+        "google/gemini-2.5-flash",
+        "google/gemini-2.5-pro",
+    ]
 
     MAX_INVALID_WORD_ATTEMPTS = 5  # How many attempts for invalid words per guess
-    MAX_PARSING_ATTEMPTS = 5       # How many attempts for parsing failures per guess
+    MAX_PARSING_ATTEMPTS = 5  # How many attempts for parsing failures per guess
 
     def __init__(
-            self,
-            word_list: WordList,
-            llm_client: LLMClient,
-            prompt_template: PromptTemplate,
-            response_parser: ResponseParser,
-            target_word: Optional[str] = None,
-            date: Optional[str] = None,
-            db_service: Optional[GameDatabaseService] = None
+        self,
+        word_list: WordList,
+        llm_client: LLMClient,
+        prompt_template: PromptTemplate,
+        response_parser: ResponseParser,
+        target_word: Optional[str] = None,
+        date: Optional[str] = None,
+        db_service: Optional[GameDatabaseService] = None,
     ):
         """
         Initialize GameRunner with required components.
@@ -101,11 +103,7 @@ class GameRunner:
 
     def _initialize_game(self) -> None:
         """Initialize the Wordle game with the target word."""
-        self.game = WordleGame(
-            word_list=self.word_list,
-            target_word=self.target_word,
-            date=self.date
-        )
+        self.game = WordleGame(word_list=self.word_list, target_word=self.target_word, date=self.date)
 
         if self.target_word:
             logger.info("Using custom target word")
@@ -165,7 +163,7 @@ class GameRunner:
             total_tokens_output=raw_usage_stats.get("completion_tokens", 0),
             total_tokens_reasoning=raw_usage_stats.get("reasoning_tokens", 0),
             total_cost_usd=raw_usage_stats.get("cost_usd", 0.0),
-            response_time_ms=raw_usage_stats.get("response_time_ms", 0.0)
+            response_time_ms=raw_usage_stats.get("response_time_ms", 0.0),
         )
 
         # Convert back to dict format for LLMInteraction storage
@@ -177,7 +175,7 @@ class GameRunner:
             "reasoning_tokens": usage_stats.total_tokens_reasoning,
             "total_tokens": raw_usage_stats.get("total_tokens", 0),
             "cost_usd": usage_stats.total_cost_usd,
-            "response_time_ms": usage_stats.response_time_ms
+            "response_time_ms": usage_stats.response_time_ms,
         }
 
     def _generate_prompt(self) -> str:
@@ -192,7 +190,9 @@ class GameRunner:
         if self.invalid_word_attempts:
             invalid_words = [attempt["word"] for attempt in self.invalid_word_attempts]
             invalid_list = ", ".join(invalid_words)
-            feedback = f"Invalid Guesses:\nNOTE: The following words you tried are not in the dictionary: {invalid_list}\n\n"
+            feedback = (
+                f"Invalid Guesses:\nNOTE: The following words you tried are not in the dictionary: {invalid_list}\n\n"
+            )
 
             prompt = self.prompt_template.insert_feedback(prompt, feedback)
 
@@ -204,25 +204,24 @@ class GameRunner:
             result = self._parse_llm_response(raw_response)
             # Capture successful parsing
             if self._current_interaction:
-                self._current_interaction.update({
-                    "parse_success": True,
-                    "attempt_number": attempt_state["parsing"]
-                })
+                self._current_interaction.update({"parse_success": True, "attempt_number": attempt_state["parsing"]})
             return result
         except ValueError as parse_error:
             # Capture failed parsing
             if self._current_interaction:
-                self._current_interaction.update({
-                    "parse_success": False,
-                    "parse_error_message": str(parse_error),
-                    "attempt_number": attempt_state["parsing"]
-                })
+                self._current_interaction.update(
+                    {
+                        "parse_success": False,
+                        "parse_error_message": str(parse_error),
+                        "attempt_number": attempt_state["parsing"],
+                    }
+                )
 
             if self._should_retry_parsing(attempt_state["parsing"], parse_error, raw_response):
                 attempt_state["parsing"] += 1  # Increment for next attempt
                 return None, None  # Signal to continue retry loop
             else:
-                raise self._create_parsing_error(parse_error)
+                raise self._create_parsing_error(parse_error) from parse_error
 
     def _try_execute_guess_with_retry(self, guess: str, reasoning: Optional[str], attempt_state: dict) -> bool:
         """Try to execute guess, handle retries, return True if successful."""
@@ -249,7 +248,8 @@ class GameRunner:
         """Check if we should retry parsing and log appropriately."""
         if parsing_attempts < self.MAX_PARSING_ATTEMPTS:
             logger.warning(
-                f"Failed to parse response (attempt {parsing_attempts}/{self.MAX_PARSING_ATTEMPTS}): {parse_error}")
+                f"Failed to parse response (attempt {parsing_attempts}/{self.MAX_PARSING_ATTEMPTS}): {parse_error}"
+            )
             logger.debug(f"Problematic response: '{raw_response}'")
             return True
         return False
@@ -258,7 +258,8 @@ class GameRunner:
         """Create error for parsing failure after max attempts."""
         logger.error(f"Failed to parse response after {self.MAX_PARSING_ATTEMPTS} attempts")
         return ValueError(
-            f"Could not parse valid guess from LLM response after {self.MAX_PARSING_ATTEMPTS} attempts: {parse_error}")
+            f"Could not parse valid guess from LLM response after {self.MAX_PARSING_ATTEMPTS} attempts: {parse_error}"
+        )
 
     def _execute_game_guess(self, guess: str, reasoning: Optional[str]) -> None:
         """Execute the guess in the game and log results."""
@@ -274,7 +275,9 @@ class GameRunner:
         """Check if we should retry invalid word and log appropriately."""
         if invalid_word_attempts < self.MAX_INVALID_WORD_ATTEMPTS:
             logger.warning(
-                f"Invalid word '{guess}' (attempt {invalid_word_attempts}/{self.MAX_INVALID_WORD_ATTEMPTS}). Retrying...")
+                f"Invalid word '{guess}' (attempt {invalid_word_attempts}/{self.MAX_INVALID_WORD_ATTEMPTS}). "
+                f"Retrying..."
+            )
             return True
         return False
 
@@ -283,17 +286,21 @@ class GameRunner:
         logger.error(f"Failed to get valid word after {self.MAX_INVALID_WORD_ATTEMPTS} attempts")
         invalid_words_list = ", ".join([attempt["word"] for attempt in self.invalid_word_attempts])
         return ValueError(
-            f"Could not get valid word from LLM after {self.MAX_INVALID_WORD_ATTEMPTS} attempts. Invalid words tried: {invalid_words_list}")
+            f"Could not get valid word from LLM after {self.MAX_INVALID_WORD_ATTEMPTS} attempts. "
+            f"Invalid words tried: {invalid_words_list}"
+        )
 
     def _handle_game_error(self, game_error: ValueError, guess: str, attempt_state: dict) -> bool:
         """Handle game errors, return True if should continue, False if should retry, raises if failed."""
         if GameRunner._is_invalid_word_error(game_error):
             # Handle invalid word
-            self.invalid_word_attempts.append({
-                "word": guess,
-                "turn_number": self._current_turn_number,
-                "attempt_number": attempt_state["invalid_word"]
-            })
+            self.invalid_word_attempts.append(
+                {
+                    "word": guess,
+                    "turn_number": self._current_turn_number,
+                    "attempt_number": attempt_state["invalid_word"],
+                }
+            )
 
             if self._should_retry_invalid_word(attempt_state["invalid_word"], guess):
                 attempt_state["invalid_word"] += 1  # Increment for next attempt
@@ -350,17 +357,13 @@ class GameRunner:
             start_time=self.start_time,
             end_time=end_time,
             date=self.date or datetime.now().strftime("%Y-%m-%d"),
-            total_invalid_attempts=len(self.invalid_word_attempts)
+            total_invalid_attempts=len(self.invalid_word_attempts),
         )
 
         # Log final summary
         self._log_game_summary(game_state_dict, duration)
 
-        result = GameResult(
-            success=True,
-            game_state=game_state,
-            metadata=metadata
-        )
+        result = GameResult(success=True, game_state=game_state, metadata=metadata)
 
         # Save to database if service is provided
         if self.db_service:
@@ -382,7 +385,7 @@ class GameRunner:
                 letter_result = LetterResult(
                     position=letter_dict["position"],
                     letter=letter_dict["letter"],
-                    status=LetterStatus(letter_dict["status"])
+                    status=LetterStatus(letter_dict["status"]),
                 )
                 letter_results.append(letter_result)
             pydantic_guess_results.append(letter_results)
@@ -402,7 +405,7 @@ class GameRunner:
             guesses_remaining=game_state_dict["guesses_remaining"],
             status=GameStatus(game_state_dict["status"]),
             won=game_state_dict["won"],
-            game_over=game_state_dict["game_over"]
+            game_over=game_state_dict["game_over"],
         )
 
     def _create_error_result(self, error_message: str) -> GameResult:
@@ -431,14 +434,14 @@ class GameRunner:
             start_time=self.start_time or end_time,  # Use end_time as fallback
             end_time=end_time,
             date=self.date or datetime.now().strftime("%Y-%m-%d"),
-            total_invalid_attempts=len(self.invalid_word_attempts)
+            total_invalid_attempts=len(self.invalid_word_attempts),
         )
 
         return GameResult(
             success=False,
             game_state=game_state,  # Partial state when available or else None
             metadata=metadata,
-            error=error_message
+            error=error_message,
         )
 
     def _log_game_summary(self, game_state: dict[str, Any], duration: float) -> None:
@@ -465,7 +468,8 @@ class GameRunner:
         if self.invalid_word_attempts:
             invalid_words = [attempt["word"] for attempt in self.invalid_word_attempts]
             logger.info(
-                f"Invalid words attempted: {', '.join(invalid_words)} ({len(self.invalid_word_attempts)} total)")
+                f"Invalid words attempted: {', '.join(invalid_words)} ({len(self.invalid_word_attempts)} total)"
+            )
 
         logger.info("=" * 50)
 
@@ -473,15 +477,14 @@ class GameRunner:
         """Complete the current interaction data and add it to the interactions list."""
         if self._current_interaction:
             # Add turn number and any missing fields
-            self._current_interaction.update({
-                "turn_number": self._current_turn_number
-            })
+            self._current_interaction.update({"turn_number": self._current_turn_number})
 
             # Add to the interactions list
             self.llm_interactions.append(self._current_interaction)
 
             # Clear the current interaction
             self._current_interaction = None
+
 
 if __name__ == "__main__":
     # Setup file paths with env var support
@@ -491,7 +494,7 @@ if __name__ == "__main__":
 
     word_list = WordList(
         base_valid_words_path=Path(os.getenv("WORDLE_WORDS_FILE", DEFAULT_WORDS_FILE)),
-        added_valid_words_path=Path(os.getenv("WORDLE_LOG_FILE", DEFAULT_LOG_FILE))
+        added_valid_words_path=Path(os.getenv("WORDLE_LOG_FILE", DEFAULT_LOG_FILE)),
     )
 
     # Setup template/parser
@@ -513,5 +516,3 @@ if __name__ == "__main__":
             print(f"{model} failed: {e}")
             # Continue with the next model instead of crashing
             continue
-
-

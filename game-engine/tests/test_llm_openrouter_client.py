@@ -26,25 +26,20 @@ class TestOpenRouterClient:
         """Return the model name"""
         assert client.get_model_name() == "openai/gpt-4o-mini"
 
-    @pytest.mark.parametrize("input_content,expected_output", [
-        ("CRANE", "CRANE"),  # Simple response
-        ('{"reasoning": "test", "guess": "CRANE"}', '{"reasoning": "test", "guess": "CRANE"}'),  # JSON response
-    ])
-    @patch('llm_integration.openrouter_client.requests.post')
+    @pytest.mark.parametrize(
+        "input_content,expected_output",
+        [
+            ("CRANE", "CRANE"),  # Simple response
+            ('{"reasoning": "test", "guess": "CRANE"}', '{"reasoning": "test", "guess": "CRANE"}'),  # JSON response
+        ],
+    )
+    @patch("llm_integration.openrouter_client.requests.post")
     def test_successful_response(self, mock_post, client, input_content, expected_output):
         """Test successful API response with realistic Wordle JSON output"""
         # Mock successful response with realistic Wordle JSON
         mock_response = Mock()
         mock_response.status_code = 200
-        mock_response.json.return_value = {
-            "choices": [
-                {
-                    "message": {
-                        "content": input_content
-                    }
-                }
-            ]
-        }
+        mock_response.json.return_value = {"choices": [{"message": {"content": input_content}}]}
         mock_post.return_value = mock_response
 
         result = client.generate_response("What's your guess?")
@@ -72,30 +67,28 @@ class TestOpenRouterClient:
         assert "temperature" in payload
         assert "max_tokens" in payload
 
-    @pytest.mark.parametrize("input_content,expected_output", [
-        ("  CRANE  \n", "CRANE"),  # Simple response
-        ('  {"reasoning": "test", "guess": "CRANE"}  \n', '{"reasoning": "test", "guess": "CRANE"}'),  # JSON response
-    ])
-    @patch('llm_integration.openrouter_client.requests.post')
+    @pytest.mark.parametrize(
+        "input_content,expected_output",
+        [
+            ("  CRANE  \n", "CRANE"),  # Simple response
+            (
+                '  {"reasoning": "test", "guess": "CRANE"}  \n',
+                '{"reasoning": "test", "guess": "CRANE"}',
+            ),  # JSON response
+        ],
+    )
+    @patch("llm_integration.openrouter_client.requests.post")
     def test_response_whitespace_stripped(self, mock_post, client, input_content, expected_output):
         """Test that response whitespace is stripped for both simple and JSON responses"""
         mock_response = Mock()
         mock_response.status_code = 200
-        mock_response.json.return_value = {
-            "choices": [
-                {
-                    "message": {
-                        "content": input_content
-                    }
-                }
-            ]
-        }
+        mock_response.json.return_value = {"choices": [{"message": {"content": input_content}}]}
         mock_post.return_value = mock_response
 
         result = client.generate_response("What's your guess?")
         assert result == expected_output
 
-    @patch('llm_integration.openrouter_client.requests.post')
+    @patch("llm_integration.openrouter_client.requests.post")
     def test_authentication_error(self, mock_post, client):
         """Test handling of authentication errors (401)"""
         mock_response = Mock()
@@ -106,7 +99,7 @@ class TestOpenRouterClient:
         with pytest.raises(LLMAuthenticationError, match="Invalid API key"):
             client.generate_response("test")
 
-    @patch('llm_integration.openrouter_client.requests.post')
+    @patch("llm_integration.openrouter_client.requests.post")
     def test_quota_exceeded_error(self, mock_post, client):
         """Test handling of quota exceeded errors (402)"""
         mock_response = Mock()
@@ -116,8 +109,8 @@ class TestOpenRouterClient:
         with pytest.raises(LLMQuotaExceededError, match="Quota or credits exhausted"):
             client.generate_response("test")
 
-    @patch('llm_integration.openrouter_client.requests.post')
-    @patch('llm_integration.openrouter_client.time.sleep')  # Mock sleep to speed up tests
+    @patch("llm_integration.openrouter_client.requests.post")
+    @patch("llm_integration.openrouter_client.time.sleep")  # Mock sleep to speed up tests
     def test_rate_limit_with_retry_success(self, mock_sleep, mock_post, client):
         """Test rate limiting with successful retry"""
         # The first call returns 429, the second call succeeds
@@ -126,9 +119,7 @@ class TestOpenRouterClient:
 
         mock_response_2 = Mock()
         mock_response_2.status_code = 200
-        mock_response_2.json.return_value = {
-            "choices": [{"message": {"content": "CRANE"}}]
-        }
+        mock_response_2.json.return_value = {"choices": [{"message": {"content": "CRANE"}}]}
 
         mock_post.side_effect = [mock_response_1, mock_response_2]
 
@@ -138,8 +129,8 @@ class TestOpenRouterClient:
         assert mock_post.call_count == 2
         mock_sleep.assert_called_once()  # Should have slept between retries
 
-    @patch('llm_integration.openrouter_client.requests.post')
-    @patch('llm_integration.openrouter_client.time.sleep')
+    @patch("llm_integration.openrouter_client.requests.post")
+    @patch("llm_integration.openrouter_client.time.sleep")
     def test_rate_limit_max_retries_exceeded(self, mock_sleep, mock_post, client):
         """Test rate limiting when max retries are exceeded"""
         # All calls return 429
@@ -152,7 +143,7 @@ class TestOpenRouterClient:
 
         assert mock_post.call_count == OpenRouterClient.MAX_RETRIES
 
-    @patch('llm_integration.openrouter_client.requests.post')
+    @patch("llm_integration.openrouter_client.requests.post")
     def test_other_http_error(self, mock_post, client):
         """Test handling of other HTTP errors (e.g., 500)"""
         mock_response = Mock()
@@ -163,8 +154,8 @@ class TestOpenRouterClient:
         with pytest.raises(LLMError, match="HTTP error 500"):
             client.generate_response("test")
 
-    @patch('llm_integration.openrouter_client.requests.post')
-    @patch('llm_integration.openrouter_client.time.sleep')
+    @patch("llm_integration.openrouter_client.requests.post")
+    @patch("llm_integration.openrouter_client.time.sleep")
     def test_timeout_error(self, mock_sleep, mock_post, client):
         # """Test handling of timeout errors"""
         mock_post.side_effect = requests.exceptions.Timeout("Request timed out")
@@ -176,21 +167,16 @@ class TestOpenRouterClient:
         assert mock_post.call_count == 3  # MAX_RETRIES
         assert mock_sleep.call_count == 2  # Should sleep between retries (3 attempts = 2 sleeps)
 
-    @patch('llm_integration.openrouter_client.requests.post')
-    @patch('llm_integration.openrouter_client.time.sleep')
+    @patch("llm_integration.openrouter_client.requests.post")
+    @patch("llm_integration.openrouter_client.time.sleep")
     def test_timeout_with_retry_success(self, mock_sleep, mock_post, client):
         """Test timeout with successful retry"""
         # First call times out, second succeeds
         mock_response = Mock()
         mock_response.status_code = 200
-        mock_response.json.return_value = {
-            "choices": [{"message": {"content": "CRANE"}}]
-        }
+        mock_response.json.return_value = {"choices": [{"message": {"content": "CRANE"}}]}
 
-        mock_post.side_effect = [
-            requests.exceptions.Timeout("Request timed out"),
-            mock_response
-        ]
+        mock_post.side_effect = [requests.exceptions.Timeout("Request timed out"), mock_response]
 
         result = client.generate_response("test")
 
@@ -198,7 +184,7 @@ class TestOpenRouterClient:
         assert mock_post.call_count == 2
         mock_sleep.assert_called_once()
 
-    @patch('llm_integration.openrouter_client.requests.post')
+    @patch("llm_integration.openrouter_client.requests.post")
     def test_json_decode_error(self, mock_post, client):
         """Test handling of invalid JSON responses"""
         mock_response = Mock()
@@ -209,39 +195,29 @@ class TestOpenRouterClient:
         with pytest.raises(LLMError, match="Failed to parse API response as JSON"):
             client.generate_response("test")
 
-    @patch('llm_integration.openrouter_client.requests.post')
+    @patch("llm_integration.openrouter_client.requests.post")
     def test_unexpected_response_structure(self, mock_post, client):
         """Test handling of unexpected API response structure"""
         mock_response = Mock()
         mock_response.status_code = 200
-        mock_response.json.return_value = {
-            "unexpected": "structure"
-        }
+        mock_response.json.return_value = {"unexpected": "structure"}
         mock_post.return_value = mock_response
 
         with pytest.raises(LLMError, match="Unexpected API response structure"):
             client.generate_response("test")
 
-    @patch('llm_integration.openrouter_client.requests.post')
+    @patch("llm_integration.openrouter_client.requests.post")
     def test_empty_response_content(self, mock_post, client):
         """Test handling of empty response content"""
         mock_response = Mock()
         mock_response.status_code = 200
-        mock_response.json.return_value = {
-            "choices": [
-                {
-                    "message": {
-                        "content": ""
-                    }
-                }
-            ]
-        }
+        mock_response.json.return_value = {"choices": [{"message": {"content": ""}}]}
         mock_post.return_value = mock_response
 
         with pytest.raises(LLMError, match="Empty response from API"):
             client.generate_response("test")
 
-    @patch('llm_integration.openrouter_client.requests.post')
+    @patch("llm_integration.openrouter_client.requests.post")
     def test_request_exception(self, mock_post, client):
         """Test handling of general request exceptions"""
         mock_post.side_effect = requests.exceptions.ConnectionError("Connection failed")
@@ -249,8 +225,8 @@ class TestOpenRouterClient:
         with pytest.raises(LLMError, match="Connection failed"):
             client.generate_response("test")
 
-    @patch('llm_integration.openrouter_client.requests.post')
-    @patch('llm_integration.openrouter_client.time.sleep')
+    @patch("llm_integration.openrouter_client.requests.post")
+    @patch("llm_integration.openrouter_client.time.sleep")
     def test_exponential_backoff(self, mock_sleep, mock_post, client):
         """Test that exponential backoff is used for retries"""
         # All calls return 429 to trigger rate limit retries
@@ -268,7 +244,7 @@ class TestOpenRouterClient:
 
     def test_no_retry_for_auth_errors(self):
         """Test that authentication errors are not retried"""
-        with patch('llm_integration.openrouter_client.requests.post') as mock_post:
+        with patch("llm_integration.openrouter_client.requests.post") as mock_post:
             mock_response = Mock()
             mock_response.status_code = 401
             mock_post.return_value = mock_response
@@ -283,7 +259,7 @@ class TestOpenRouterClient:
 
     def test_no_retry_for_quota_errors(self):
         """Test that quota exceeded errors are not retried"""
-        with patch('llm_integration.openrouter_client.requests.post') as mock_post:
+        with patch("llm_integration.openrouter_client.requests.post") as mock_post:
             mock_response = Mock()
             mock_response.status_code = 402
             mock_post.return_value = mock_response
@@ -296,18 +272,14 @@ class TestOpenRouterClient:
             # Should only be called once (no retries)
             assert mock_post.call_count == 1
 
-    @patch('llm_integration.openrouter_client.requests.post')
+    @patch("llm_integration.openrouter_client.requests.post")
     def test_cost_calculation_with_usage_data(self, mock_post, client):
         """Test that cost is calculated correctly when usage data is provided"""
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.json.return_value = {
             "choices": [{"message": {"content": "CRANE"}}],
-            "usage": {
-                "prompt_tokens": 100,
-                "completion_tokens": 50,
-                "total_tokens": 150
-            }
+            "usage": {"prompt_tokens": 100, "completion_tokens": 50, "total_tokens": 150},
         }
         mock_post.return_value = mock_response
 
@@ -323,10 +295,10 @@ class TestOpenRouterClient:
 
         # Verify cost calculation (gpt-4o-mini: $0.15/$0.60 per 1M tokens)
         # Expected: (100/1M * 0.15) + (50/1M * 0.60) = 0.000015 + 0.00003 = 0.000045
-        expected_cost = (100/1_000_000 * 0.15) + (50/1_000_000 * 0.60)
+        expected_cost = (100 / 1_000_000 * 0.15) + (50 / 1_000_000 * 0.60)
         assert usage_stats["cost_usd"] == pytest.approx(expected_cost)
 
-    @patch('llm_integration.openrouter_client.requests.post')
+    @patch("llm_integration.openrouter_client.requests.post")
     def test_cost_calculation_with_reasoning_tokens(self, mock_post):
         """Test cost calculation when reasoning tokens are present (e.g., O3 model)"""
         client = OpenRouterClient(api_key="fake-key", model="openai/o3")
@@ -335,12 +307,7 @@ class TestOpenRouterClient:
         mock_response.status_code = 200
         mock_response.json.return_value = {
             "choices": [{"message": {"content": "CRANE"}}],
-            "usage": {
-                "prompt_tokens": 500,
-                "completion_tokens": 50,
-                "reasoning_tokens": 2000,
-                "total_tokens": 2550
-            }
+            "usage": {"prompt_tokens": 500, "completion_tokens": 50, "reasoning_tokens": 2000, "total_tokens": 2550},
         }
         mock_post.return_value = mock_response
 
@@ -357,10 +324,10 @@ class TestOpenRouterClient:
 
         # Verify cost calculation (O3: $2.0/$8.0 per 1M tokens)
         # Expected: (500/1M * 2.0) + ((50 + 2000)/1M * 8.0) = 0.001 + 0.0164 = 0.0174
-        expected_cost = (500/1_000_000 * 2.0) + ((50 + 2000)/1_000_000 * 8.0)
+        expected_cost = (500 / 1_000_000 * 2.0) + ((50 + 2000) / 1_000_000 * 8.0)
         assert usage_stats["cost_usd"] == pytest.approx(expected_cost)
 
-    @patch('llm_integration.openrouter_client.requests.post')
+    @patch("llm_integration.openrouter_client.requests.post")
     def test_cost_calculation_no_usage_data(self, mock_post, client):
         """Test that cost is reset when no usage data is provided"""
         mock_response = Mock()
@@ -383,7 +350,7 @@ class TestOpenRouterClient:
         assert usage_stats["total_tokens"] == 0
         assert usage_stats["cost_usd"] == pytest.approx(0.0)
 
-    @patch('llm_integration.openrouter_client.requests.post')
+    @patch("llm_integration.openrouter_client.requests.post")
     def test_cost_calculation_unknown_model_raises_error(self, mock_post):
         """Test that unknown models raise pricing errors"""
         client = OpenRouterClient(api_key="fake-key", model="unknown/model")
@@ -392,11 +359,7 @@ class TestOpenRouterClient:
         mock_response.status_code = 200
         mock_response.json.return_value = {
             "choices": [{"message": {"content": "CRANE"}}],
-            "usage": {
-                "prompt_tokens": 100,
-                "completion_tokens": 50,
-                "total_tokens": 150
-            }
+            "usage": {"prompt_tokens": 100, "completion_tokens": 50, "total_tokens": 150},
         }
         mock_post.return_value = mock_response
 

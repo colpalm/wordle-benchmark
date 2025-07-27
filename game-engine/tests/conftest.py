@@ -12,7 +12,7 @@ from wordle.word_list import WordList
 @pytest.fixture
 def temp_base_words_file():
     """Create a temporary file with valid base words"""
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
         f.write("CRANE\n")
         f.write("STARE\n")
         f.write("WORLD\n")
@@ -28,6 +28,7 @@ def temp_base_words_file():
         yield Path(f.name)
         Path(f.name).unlink()  # Clean up
 
+
 @pytest.fixture
 def nonexistent_log_file():
     """Provide the path to the log file that doesn't exist (realistic scenario)"""
@@ -40,6 +41,7 @@ def nonexistent_log_file():
     if log_path.exists():
         log_path.unlink()
     temp_dir.rmdir()
+
 
 @pytest.fixture
 def word_list(temp_base_words_file, nonexistent_log_file):
@@ -55,7 +57,7 @@ def db_config():
 
     class DatabaseTestConfig(DatabaseConfig):
         """Test database configuration for pytest integration tests.
-        
+
         Uses TestContainers to manage ephemeral PostgreSQL instances
         for test isolation and clean state.
         """
@@ -69,16 +71,14 @@ def db_config():
                 return self._database_url
 
             # For pytest integration tests, this will be set by postgresql fixtures
-            url = os.getenv('TEST_DATABASE_URL')
+            url = os.getenv("TEST_DATABASE_URL")
             if not url:
-                raise ValueError(
-                    "TEST_DATABASE_URL must be set by postgresql fixture for integration tests"
-                )
+                raise ValueError("TEST_DATABASE_URL must be set by postgresql fixture for integration tests")
 
             return url
 
         @property
         def echo_sql(self) -> bool:
-            return os.getenv('TEST_DB_ECHO_SQL', 'false').lower() == 'true'
+            return os.getenv("TEST_DB_ECHO_SQL", "false").lower() == "true"
 
     return DatabaseTestConfig()

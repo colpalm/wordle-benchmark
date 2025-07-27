@@ -12,7 +12,7 @@ class TestWordListLoading:
     @pytest.fixture
     def log_file_with_entries(self):
         """Create the log file with realistic entries"""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.log', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".log", delete=False) as f:
             f.write("2024-01-01T10:00:00: TESTS\n")
             f.write("2024-01-01T11:00:00: WORDS\n")
             f.flush()
@@ -57,7 +57,7 @@ class TestWordListLoading:
 
     def test_load_words_invalid_entries_filtered(self, nonexistent_log_file):
         """Test that invalid entries are filtered out during loading"""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             f.write("CRANE\n")  # Valid
             f.write("CAR\n")  # Too short
             f.write("HOUSES\n")  # Too long
@@ -88,7 +88,7 @@ class TestWordListLoading:
 
     def test_load_words_empty_file_error(self, nonexistent_log_file):
         """Test error when the base words file is empty"""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             f.flush()  # Empty file
             temp_path = Path(f.name)
 
@@ -175,7 +175,7 @@ class TestWordListAddWord:
             word_list.add_word("TES1S")  # Contains number
 
     def test_add_duplicate_word_ignored(self, word_list):
-        """Test that adding a word that already exists is handled gracefully - does not add to the valid list or log it"""
+        """Test that adding an existing word is handled gracefully - does not add to the valid list or log it"""
 
         original_size = len(word_list.words)
 

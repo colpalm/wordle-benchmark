@@ -1,4 +1,3 @@
-
 import pytest
 
 from wordle.enums import GameStatus, LetterStatus
@@ -10,6 +9,7 @@ from wordle.wordle_game import WordleGame
 def sample_game(word_list: WordList) -> WordleGame:
     """Fixture providing a basic game instance"""
     return WordleGame(word_list=word_list, target_word="CRANE")
+
 
 class TestEvaluateGuess:
     """Test suite for _evaluate_guess method"""
@@ -62,7 +62,8 @@ class TestEvaluateGuess:
         """Test handling of duplicate letters in guess"""
         result = sample_game._evaluate_guess("ERASE")
 
-        # First E (position 0) should be absent (Correct E in position 4 is handled first, then there should be no more E's)
+        # First E (position 0) should be absent
+        # (Correct E in position 4 is handled first, then there should be no more E's)
         assert result[0]["letter"] == "E"
         assert result[0]["status"] == LetterStatus.ABSENT.value
 
@@ -181,8 +182,10 @@ class TestMakeGuess:
 
         assert result["guess"] == "STARE"
 
+
 class TestValidateGuess:
     """Test suite for validate_guess_format method"""
+
     # Note: Incorrect Length and invalid characters tested above in TestMakeGuess
 
     def test_valid_five_letter_word(self):
@@ -200,6 +203,7 @@ class TestValidateGuess:
         is_valid, error_msg = WordleGame.validate_guess_format("")
         assert is_valid is False
         assert "5-letter word" in error_msg
+
 
 class TestGameState:
     """Test suite for the get_game_state method"""

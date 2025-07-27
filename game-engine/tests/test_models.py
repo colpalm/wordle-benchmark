@@ -10,11 +10,7 @@ from wordle.models import GameMetadata, GameResult, GameState, LetterResult, Usa
 
 class TestLetterResult:
     def test_valid_letter_result(self):
-        result = LetterResult(
-            position=0,
-            letter="A",
-            status=LetterStatus.CORRECT
-        )
+        result = LetterResult(position=0, letter="A", status=LetterStatus.CORRECT)
         assert result.position == 0
         assert result.letter == "A"
         assert result.status == LetterStatus.CORRECT
@@ -51,21 +47,21 @@ class TestGameState:
                     LetterResult(position=1, letter="O", status=LetterStatus.PRESENT),
                     LetterResult(position=2, letter="R", status=LetterStatus.ABSENT),
                     LetterResult(position=3, letter="L", status=LetterStatus.CORRECT),
-                    LetterResult(position=4, letter="D", status=LetterStatus.ABSENT)
+                    LetterResult(position=4, letter="D", status=LetterStatus.ABSENT),
                 ],
                 [
                     LetterResult(position=0, letter="H", status=LetterStatus.CORRECT),
                     LetterResult(position=1, letter="E", status=LetterStatus.CORRECT),
                     LetterResult(position=2, letter="L", status=LetterStatus.CORRECT),
                     LetterResult(position=3, letter="L", status=LetterStatus.CORRECT),
-                    LetterResult(position=4, letter="O", status=LetterStatus.CORRECT)
-                ]
+                    LetterResult(position=4, letter="O", status=LetterStatus.CORRECT),
+                ],
             ],
             guesses_made=2,
             guesses_remaining=4,
             status=GameStatus.WON,
             won=True,
-            game_over=True
+            game_over=True,
         )
         assert state.target_word == "HELLO"
         assert len(state.guesses) == 2
@@ -80,7 +76,7 @@ class TestGameState:
                 guesses_remaining=6,
                 status=GameStatus.IN_PROGRESS,
                 won=False,
-                game_over=False
+                game_over=False,
             )
 
     def test_invalid_guesses_bounds(self):
@@ -91,7 +87,7 @@ class TestGameState:
                 guesses_remaining=6,
                 status=GameStatus.IN_PROGRESS,
                 won=False,
-                game_over=False
+                game_over=False,
             )
 
     def test_default_values(self):
@@ -101,7 +97,7 @@ class TestGameState:
             guesses_remaining=6,
             status=GameStatus.IN_PROGRESS,
             won=False,
-            game_over=False
+            game_over=False,
         )
         assert state.guesses == []
         assert state.guess_reasoning == []
@@ -117,12 +113,7 @@ class TestUsageStats:
         assert stats.response_time_ms == pytest.approx(0.0)
 
     def test_custom_usage_stats(self):
-        stats = UsageStats(
-            total_tokens_input=100,
-            total_tokens_output=50,
-            total_cost_usd=0.02,
-            response_time_ms=250.5
-        )
+        stats = UsageStats(total_tokens_input=100, total_tokens_output=50, total_cost_usd=0.02, response_time_ms=250.5)
         assert stats.total_tokens_input == 100
         assert stats.total_tokens_output == 50
         assert stats.total_cost_usd == pytest.approx(0.02)
@@ -142,7 +133,7 @@ class TestGameMetadata:
             start_time=start_time,
             end_time=end_time,
             date="2024-01-01",
-            total_invalid_attempts=1
+            total_invalid_attempts=1,
         )
 
         assert metadata.model == "gpt-4o-mini"
@@ -163,7 +154,7 @@ class TestGameMetadata:
                 duration_seconds=-1.0,  # Invalid
                 start_time=datetime.now(),
                 end_time=datetime.now(),
-                date="2024-01-01"
+                date="2024-01-01",
             )
 
     def test_invalid_attempts_bounds(self):
@@ -176,7 +167,7 @@ class TestGameMetadata:
                 start_time=datetime.now(),
                 end_time=datetime.now(),
                 date="2024-01-01",
-                total_invalid_attempts=-1  # Invalid
+                total_invalid_attempts=-1,  # Invalid
             )
 
     def test_default_values(self):
@@ -187,7 +178,7 @@ class TestGameMetadata:
             duration_seconds=300.0,
             start_time=datetime.now(),
             end_time=datetime.now(),
-            date="2024-01-01"
+            date="2024-01-01",
         )
         assert metadata.total_invalid_attempts == 0
 
@@ -204,7 +195,7 @@ class TestGameResult:
             guesses_remaining=4,
             status=GameStatus.WON,
             won=True,
-            game_over=True
+            game_over=True,
         )
 
         metadata = GameMetadata(
@@ -214,14 +205,10 @@ class TestGameResult:
             duration_seconds=300.0,
             start_time=start_time,
             end_time=end_time,
-            date="2024-01-01"
+            date="2024-01-01",
         )
 
-        result = GameResult(
-            success=True,
-            game_state=game_state,
-            metadata=metadata
-        )
+        result = GameResult(success=True, game_state=game_state, metadata=metadata)
 
         assert result.success is True
         assert result.game_state == game_state
@@ -236,7 +223,7 @@ class TestGameResult:
             guesses_remaining=4,
             status=GameStatus.WON,
             won=True,
-            game_over=True
+            game_over=True,
         )
 
         metadata = GameMetadata(
@@ -246,14 +233,10 @@ class TestGameResult:
             duration_seconds=300.0,
             start_time=datetime.now(),
             end_time=datetime.now(),
-            date="2024-01-01"
+            date="2024-01-01",
         )
 
-        result = GameResult(
-            success=True,
-            game_state=game_state,
-            metadata=metadata
-        )
+        result = GameResult(success=True, game_state=game_state, metadata=metadata)
 
         assert result.won is True
         assert result.target_word == "HELLO"
@@ -266,7 +249,7 @@ class TestGameResult:
             guesses_remaining=6,
             status=GameStatus.IN_PROGRESS,
             won=False,
-            game_over=False
+            game_over=False,
         )
 
         metadata = GameMetadata(
@@ -276,15 +259,10 @@ class TestGameResult:
             duration_seconds=300.0,
             start_time=datetime.now(),
             end_time=datetime.now(),
-            date="2024-01-01"
+            date="2024-01-01",
         )
 
-        result = GameResult(
-            success=False,
-            game_state=game_state,
-            metadata=metadata,
-            error="Connection timeout"
-        )
+        result = GameResult(success=False, game_state=game_state, metadata=metadata, error="Connection timeout")
 
         assert result.success is False
         assert result.error == "Connection timeout"
@@ -292,19 +270,11 @@ class TestGameResult:
 
 class TestModelSerialization:
     def test_letter_result_serialization(self):
-        result = LetterResult(
-            position=0,
-            letter="A",
-            status=LetterStatus.CORRECT
-        )
+        result = LetterResult(position=0, letter="A", status=LetterStatus.CORRECT)
 
         # Test JSON serialization
         json_data = result.model_dump()
-        assert json_data == {
-            "position": 0,
-            "letter": "A",
-            "status": "correct"
-        }
+        assert json_data == {"position": 0, "letter": "A", "status": "correct"}
 
         # Test JSON string serialization
         json_str = result.model_dump_json()
@@ -325,14 +295,14 @@ class TestModelSerialization:
                     LetterResult(position=1, letter="O", status=LetterStatus.PRESENT),
                     LetterResult(position=2, letter="R", status=LetterStatus.ABSENT),
                     LetterResult(position=3, letter="L", status=LetterStatus.CORRECT),
-                    LetterResult(position=4, letter="D", status=LetterStatus.ABSENT)
+                    LetterResult(position=4, letter="D", status=LetterStatus.ABSENT),
                 ]
             ],
             guesses_made=1,
             guesses_remaining=5,
             status=GameStatus.IN_PROGRESS,
             won=False,
-            game_over=False
+            game_over=False,
         )
 
         # Test serialization
@@ -349,12 +319,7 @@ class TestModelSerialization:
         assert reconstructed == state
 
     def test_usage_stats_serialization(self):
-        stats = UsageStats(
-            total_tokens_input=100,
-            total_tokens_output=50,
-            total_cost_usd=0.02,
-            response_time_ms=250.5
-        )
+        stats = UsageStats(total_tokens_input=100, total_tokens_output=50, total_cost_usd=0.02, response_time_ms=250.5)
 
         json_data = stats.model_dump()
         assert json_data == {
@@ -362,7 +327,7 @@ class TestModelSerialization:
             "total_tokens_output": 50,
             "total_tokens_reasoning": 0,
             "total_cost_usd": 0.02,
-            "response_time_ms": 250.5
+            "response_time_ms": 250.5,
         }
 
         reconstructed = UsageStats.model_validate(json_data)
@@ -380,7 +345,7 @@ class TestModelSerialization:
             start_time=start_time,
             end_time=end_time,
             date="2024-01-01",
-            total_invalid_attempts=1
+            total_invalid_attempts=1,
         )
 
         json_data = metadata.model_dump()
@@ -409,21 +374,21 @@ class TestModelSerialization:
                     LetterResult(position=1, letter="O", status=LetterStatus.PRESENT),
                     LetterResult(position=2, letter="R", status=LetterStatus.ABSENT),
                     LetterResult(position=3, letter="L", status=LetterStatus.CORRECT),
-                    LetterResult(position=4, letter="D", status=LetterStatus.ABSENT)
+                    LetterResult(position=4, letter="D", status=LetterStatus.ABSENT),
                 ],
                 [
                     LetterResult(position=0, letter="H", status=LetterStatus.CORRECT),
                     LetterResult(position=1, letter="E", status=LetterStatus.CORRECT),
                     LetterResult(position=2, letter="L", status=LetterStatus.CORRECT),
                     LetterResult(position=3, letter="L", status=LetterStatus.CORRECT),
-                    LetterResult(position=4, letter="O", status=LetterStatus.CORRECT)
-                ]
+                    LetterResult(position=4, letter="O", status=LetterStatus.CORRECT),
+                ],
             ],
             guesses_made=2,
             guesses_remaining=4,
             status=GameStatus.WON,
             won=True,
-            game_over=True
+            game_over=True,
         )
 
         metadata = GameMetadata(
@@ -433,14 +398,10 @@ class TestModelSerialization:
             duration_seconds=300.0,
             start_time=start_time,
             end_time=end_time,
-            date="2024-01-01"
+            date="2024-01-01",
         )
 
-        result = GameResult(
-            success=True,
-            game_state=game_state,
-            metadata=metadata
-        )
+        result = GameResult(success=True, game_state=game_state, metadata=metadata)
 
         # Test full serialization
         json_data = result.model_dump()

@@ -21,16 +21,13 @@ class GameDatabaseService:
 
     def __init__(self, config: DatabaseConfig):
         """Initialize database service with configuration.
-        
+
         Args:
             config: Database configuration instance
         """
         self.config = config
-        self.engine: Engine = create_engine(
-            config.database_url,
-            echo=config.echo_sql
-        )
-        self.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=self.engine) # NOSONAR
+        self.engine: Engine = create_engine(config.database_url, echo=config.echo_sql)
+        self.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)  # NOSONAR
 
     def create_tables(self) -> None:
         """Create all database tables. Use for testing or initial setup."""
@@ -50,19 +47,22 @@ class GameDatabaseService:
             logger.error(f"Failed to drop tables: {e}")
             raise
 
-    def save_game_result(self, game_result: GameResult,
-                        llm_interactions: Optional[List[Dict[str, Any]]] = None,
-                        invalid_word_attempts: Optional[List[Dict[str, Any]]] = None) -> UUID:
+    def save_game_result(
+        self,
+        game_result: GameResult,
+        llm_interactions: Optional[List[Dict[str, Any]]] = None,
+        invalid_word_attempts: Optional[List[Dict[str, Any]]] = None,
+    ) -> UUID:
         """Save a complete game result to the database.
-        
+
         Args:
             game_result: Pydantic GameResult model
             llm_interactions: Optional list of LLM interaction data
             invalid_word_attempts: Optional list of dicts with word and turn info for invalid words
-            
+
         Returns:
             UUID of the saved game
-            
+
         Raises:
             SQLAlchemyError: If database operation fails
         """
@@ -95,20 +95,24 @@ class GameDatabaseService:
 
     def get_game_by_id(self, game_id: UUID) -> Optional[Game]:
         """Retrieve a game by its ID with all relationships loaded.
-        
+
         Args:
             game_id: UUID of the game
-            
+
         Returns:
             Game model or None if not found
         """
         with self.SessionLocal() as session:
             try:
-                stmt = select(Game).options(
-                    selectinload(Game.turns),
-                    selectinload(Game.invalid_attempts),
-                    selectinload(Game.llm_interactions)
-                ).where(Game.id == game_id)
+                stmt = (
+                    select(Game)
+                    .options(
+                        selectinload(Game.turns),
+                        selectinload(Game.invalid_attempts),
+                        selectinload(Game.llm_interactions),
+                    )
+                    .where(Game.id == game_id)
+                )
                 result = session.execute(stmt)
                 game = result.scalar_one_or_none()
                 if game:
@@ -120,10 +124,10 @@ class GameDatabaseService:
 
     def get_games_by_date(self, target_date: date) -> List[Game]:
         """Retrieve all games for a specific date.
-        
+
         Args:
             target_date: Date to query
-            
+
         Returns:
             List of Game models
         """
@@ -138,11 +142,11 @@ class GameDatabaseService:
 
     def get_games_by_model(self, model_name: str, limit: Optional[int] = None) -> List[Game]:
         """Retrieve games by model name.
-        
+
         Args:
             model_name: Name of the LLM model
             limit: Optional limit on number of results
-            
+
         Returns:
             List of Game models
         """
@@ -178,7 +182,7 @@ class GameDatabaseService:
             duration_seconds=metadata.duration_seconds,
             total_invalid_attempts=metadata.total_invalid_attempts,
             created_at=datetime.now(UTC),
-            completed_at=metadata.end_time
+            completed_at=metadata.end_time,
         )
 
     @staticmethod
@@ -196,11 +200,7 @@ class GameDatabaseService:
             letter_results = []
             if (turn_number - 1) < len(game_state.guess_results):
                 letter_results = [
-                    {
-                        "position": lr.position,
-                        "letter": lr.letter,
-                        "status": lr.status.value
-                    }
+                    {"position": lr.position, "letter": lr.letter, "status": lr.status.value}
                     for lr in game_state.guess_results[turn_number - 1]
                 ]
 
@@ -213,35 +213,35 @@ class GameDatabaseService:
                 guess=guess,
                 reasoning=reasoning,
                 is_correct=is_correct,
-                letter_results=letter_results
+                letter_results=letter_results,
             )
             session.add(turn)
 
     @staticmethod
-    def _add_llm_interactions(session: Session, game_id: UUID,
-                            llm_interactions: List[Dict[str, Any]]) -> None:
+    def _add_llm_interactions(session: Session, game_id: UUID, llm_interactions: List[Dict[str, Any]]) -> None:
         """Add LLM interactions to the database."""
         for interaction_data in llm_interactions:
             interaction = LLMInteraction(
                 game_id=game_id,
-                turn_number=interaction_data.get('turn_number'),
-                prompt_text=interaction_data.get('prompt_text', ''),
-                raw_response=interaction_data.get('raw_response', ''),
-                parse_success=interaction_data.get('parse_success', True),
-                parse_error_message=interaction_data.get('parse_error_message'),
-                attempt_number=interaction_data.get('attempt_number', 1),
-                response_time_ms=interaction_data.get('response_time_ms'),
-                prompt_tokens=interaction_data.get('prompt_tokens'),
-                completion_tokens=interaction_data.get('completion_tokens'),
-                reasoning_tokens=interaction_data.get('reasoning_tokens'),
-                total_tokens=interaction_data.get('total_tokens'),
-                cost_usd=interaction_data.get('cost_usd')
+                turn_number=interaction_data.get("turn_number"),
+                prompt_text=interaction_data.get("prompt_text", ""),
+                raw_response=interaction_data.get("raw_response", ""),
+                parse_success=interaction_data.get("parse_success", True),
+                parse_error_message=interaction_data.get("parse_error_message"),
+                attempt_number=interaction_data.get("attempt_number", 1),
+                response_time_ms=interaction_data.get("response_time_ms"),
+                prompt_tokens=interaction_data.get("prompt_tokens"),
+                completion_tokens=interaction_data.get("completion_tokens"),
+                reasoning_tokens=interaction_data.get("reasoning_tokens"),
+                total_tokens=interaction_data.get("total_tokens"),
+                cost_usd=interaction_data.get("cost_usd"),
             )
             session.add(interaction)
 
     @staticmethod
-    def _add_invalid_word_attempts(session: Session, game_id: UUID,
-                                 invalid_word_attempts: List[Dict[str, Any]]) -> None:
+    def _add_invalid_word_attempts(
+        session: Session, game_id: UUID, invalid_word_attempts: List[Dict[str, Any]]
+    ) -> None:
         """Add invalid word attempts to the database."""
         for invalid_attempt in invalid_word_attempts:
             # Create InvalidWordAttempt object with proper game_id and turn number
@@ -249,6 +249,6 @@ class GameDatabaseService:
                 game_id=game_id,
                 turn_number=invalid_attempt["turn_number"],
                 attempted_word=invalid_attempt["word"],
-                attempt_number=invalid_attempt["attempt_number"]
+                attempt_number=invalid_attempt["attempt_number"],
             )
             session.add(attempt)

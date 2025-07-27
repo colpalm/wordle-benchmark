@@ -5,8 +5,8 @@
 
 # Backend targets
 lint-backend:
-	cd game-engine && uv run ruff check --fix .
 	cd game-engine && uv run ruff format .
+	cd game-engine && uv run ruff check --fix .
 
 test-backend-fast:
 	cd game-engine && uv run pytest -m "not api_calls" ./tests/

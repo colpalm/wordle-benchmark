@@ -29,7 +29,7 @@ def db_service(postgres_container, db_config):
     """Database service fixture with test database."""
     # Set the test database URL for our config
     test_url = postgres_container.get_connection_url()
-    os.environ['TEST_DATABASE_URL'] = test_url
+    os.environ["TEST_DATABASE_URL"] = test_url
 
     # Create service and tables
     service = GameDatabaseService(db_config)
@@ -39,8 +39,8 @@ def db_service(postgres_container, db_config):
 
     # Cleanup
     service.drop_tables()
-    if 'TEST_DATABASE_URL' in os.environ:
-        del os.environ['TEST_DATABASE_URL']
+    if "TEST_DATABASE_URL" in os.environ:
+        del os.environ["TEST_DATABASE_URL"]
 
 
 @pytest.mark.integration
@@ -70,21 +70,21 @@ class TestGameDatabaseService:
                     LetterResult(position=1, letter="R", status=LetterStatus.ABSENT),
                     LetterResult(position=2, letter="A", status=LetterStatus.ABSENT),
                     LetterResult(position=3, letter="N", status=LetterStatus.ABSENT),
-                    LetterResult(position=4, letter="E", status=LetterStatus.PRESENT)
+                    LetterResult(position=4, letter="E", status=LetterStatus.PRESENT),
                 ],
                 [  # TESTS vs TESTS
                     LetterResult(position=0, letter="T", status=LetterStatus.CORRECT),
                     LetterResult(position=1, letter="E", status=LetterStatus.CORRECT),
                     LetterResult(position=2, letter="S", status=LetterStatus.CORRECT),
                     LetterResult(position=3, letter="T", status=LetterStatus.CORRECT),
-                    LetterResult(position=4, letter="S", status=LetterStatus.CORRECT)
-                ]
+                    LetterResult(position=4, letter="S", status=LetterStatus.CORRECT),
+                ],
             ],
             guesses_made=2,
             guesses_remaining=4,
             status=GameStatus.WON,
             won=True,
-            game_over=True
+            game_over=True,
         )
 
         start_time = datetime.now(UTC)
@@ -98,15 +98,10 @@ class TestGameDatabaseService:
             start_time=start_time,
             end_time=end_time,
             date="2024-01-15",
-            total_invalid_attempts=0
+            total_invalid_attempts=0,
         )
 
-        game_result = GameResult(
-            success=True,
-            game_state=game_state,
-            metadata=metadata,
-            error=None
-        )
+        game_result = GameResult(success=True, game_state=game_state, metadata=metadata, error=None)
 
         # Save the game result
         game_id = db_service.save_game_result(game_result)
@@ -135,14 +130,14 @@ class TestGameDatabaseService:
                     LetterResult(position=1, letter="O", status=LetterStatus.PRESENT),
                     LetterResult(position=2, letter="R", status=LetterStatus.ABSENT),
                     LetterResult(position=3, letter="L", status=LetterStatus.CORRECT),
-                    LetterResult(position=4, letter="D", status=LetterStatus.ABSENT)
+                    LetterResult(position=4, letter="D", status=LetterStatus.ABSENT),
                 ]
             ],
             guesses_made=1,
             guesses_remaining=5,
             status=GameStatus.IN_PROGRESS,
             won=False,
-            game_over=False
+            game_over=False,
         )
 
         metadata = GameMetadata(
@@ -153,19 +148,15 @@ class TestGameDatabaseService:
             start_time=datetime.now(UTC),
             end_time=datetime.now(UTC),
             date="2024-01-15",
-            total_invalid_attempts=2
+            total_invalid_attempts=2,
         )
 
-        game_result = GameResult(
-            success=True,
-            game_state=game_state,
-            metadata=metadata
-        )
+        game_result = GameResult(success=True, game_state=game_state, metadata=metadata)
 
         # Prepare invalid word attempts in consolidated structure
         invalid_word_attempts = [
             {"word": "XYZZZ", "turn_number": 1, "attempt_number": 1},
-            {"word": "QWRTY", "turn_number": 1, "attempt_number": 2}
+            {"word": "QWRTY", "turn_number": 1, "attempt_number": 2},
         ]
 
         # Save with invalid attempts
@@ -190,15 +181,14 @@ class TestGameDatabaseService:
                 target_word=f"TEST{i}",
                 guesses=[f"WORD{i}"],
                 guess_reasoning=[None],
-                guess_results=[[
-                    LetterResult(position=j, letter=f"WORD{i}"[j], status=LetterStatus.ABSENT)
-                    for j in range(5)
-                ]],
+                guess_results=[
+                    [LetterResult(position=j, letter=f"WORD{i}"[j], status=LetterStatus.ABSENT) for j in range(5)]
+                ],
                 guesses_made=1,
                 guesses_remaining=5,
                 status=GameStatus.IN_PROGRESS,
                 won=False,
-                game_over=False
+                game_over=False,
             )
 
             metadata = GameMetadata(
@@ -208,14 +198,10 @@ class TestGameDatabaseService:
                 duration_seconds=30.0,
                 start_time=datetime.now(UTC),
                 end_time=datetime.now(UTC),
-                date="2024-01-15"
+                date="2024-01-15",
             )
 
-            game_result = GameResult(
-                success=True,
-                game_state=game_state,
-                metadata=metadata
-            )
+            game_result = GameResult(success=True, game_state=game_state, metadata=metadata)
 
             db_service.save_game_result(game_result)
 
@@ -234,15 +220,14 @@ class TestGameDatabaseService:
                 target_word=f"TEST{i}",
                 guesses=[f"WORD{i}"],
                 guess_reasoning=[None],
-                guess_results=[[
-                    LetterResult(position=j, letter=f"WORD{i}"[j], status=LetterStatus.ABSENT)
-                    for j in range(5)
-                ]],
+                guess_results=[
+                    [LetterResult(position=j, letter=f"WORD{i}"[j], status=LetterStatus.ABSENT) for j in range(5)]
+                ],
                 guesses_made=1,
                 guesses_remaining=5,
                 status=GameStatus.IN_PROGRESS,
                 won=False,
-                game_over=False
+                game_over=False,
             )
 
             metadata = GameMetadata(
@@ -252,14 +237,10 @@ class TestGameDatabaseService:
                 duration_seconds=30.0,
                 start_time=datetime.now(UTC),
                 end_time=datetime.now(UTC),
-                date="2024-01-15"
+                date="2024-01-15",
             )
 
-            game_result = GameResult(
-                success=True,
-                game_state=game_state,
-                metadata=metadata
-            )
+            game_result = GameResult(success=True, game_state=game_state, metadata=metadata)
 
             db_service.save_game_result(game_result)
 
@@ -280,14 +261,14 @@ class TestGameDatabaseService:
                     LetterResult(position=1, letter="O", status=LetterStatus.PRESENT),
                     LetterResult(position=2, letter="R", status=LetterStatus.ABSENT),
                     LetterResult(position=3, letter="L", status=LetterStatus.CORRECT),
-                    LetterResult(position=4, letter="D", status=LetterStatus.ABSENT)
+                    LetterResult(position=4, letter="D", status=LetterStatus.ABSENT),
                 ]
             ],
             guesses_made=1,
             guesses_remaining=5,
             status=GameStatus.IN_PROGRESS,
             won=False,
-            game_over=False
+            game_over=False,
         )
 
         metadata = GameMetadata(
@@ -297,14 +278,10 @@ class TestGameDatabaseService:
             duration_seconds=30.0,
             start_time=datetime.now(UTC),
             end_time=datetime.now(UTC),
-            date="2024-01-15"
+            date="2024-01-15",
         )
 
-        game_result = GameResult(
-            success=True,
-            game_state=game_state,
-            metadata=metadata
-        )
+        game_result = GameResult(success=True, game_state=game_state, metadata=metadata)
 
         # Create LLM interactions data
         llm_interactions = [
@@ -314,7 +291,7 @@ class TestGameDatabaseService:
                 "raw_response": "I think WORLD would be a good starting word.",
                 "parse_success": True,
                 "attempt_number": 1,
-                "response_time_ms": 1500
+                "response_time_ms": 1500,
             }
         ]
 

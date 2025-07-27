@@ -5,6 +5,7 @@ from wordle.prompt_templates import JsonPromptTemplate, PromptTemplateFactory, S
 
 logger = get_logger(__name__)
 
+
 class BasePromptTemplate:
     """Base test class with common tests for all prompt templates"""
 
@@ -16,12 +17,7 @@ class BasePromptTemplate:
     @pytest.fixture
     def empty_game_state(self):
         """Fixture for a fresh game state (no guesses made)"""
-        return {
-            "guesses": [],
-            "guess_results": [],
-            "guesses_made": 0,
-            "guesses_remaining": 6
-        }
+        return {"guesses": [], "guess_results": [], "guesses_made": 0, "guesses_remaining": 6}
 
     @pytest.fixture
     def game_with_one_guess(self):
@@ -34,11 +30,11 @@ class BasePromptTemplate:
                     {"letter": "T", "status": "absent"},
                     {"letter": "A", "status": "correct"},
                     {"letter": "R", "status": "present"},
-                    {"letter": "E", "status": "correct"}
+                    {"letter": "E", "status": "correct"},
                 ]
             ],
             "guesses_made": 1,
-            "guesses_remaining": 5
+            "guesses_remaining": 5,
         }
 
     @pytest.fixture
@@ -52,25 +48,25 @@ class BasePromptTemplate:
                     {"letter": "T", "status": "absent"},
                     {"letter": "A", "status": "correct"},
                     {"letter": "R", "status": "present"},
-                    {"letter": "E", "status": "correct"}
+                    {"letter": "E", "status": "correct"},
                 ],
                 [
                     {"letter": "C", "status": "present"},
                     {"letter": "L", "status": "absent"},
                     {"letter": "O", "status": "absent"},
                     {"letter": "U", "status": "absent"},
-                    {"letter": "D", "status": "absent"}
-                ]
+                    {"letter": "D", "status": "absent"},
+                ],
             ],
             "guesses_made": 2,
-            "guesses_remaining": 4
+            "guesses_remaining": 4,
         }
 
     @staticmethod
     def determine_prompt_logging_header(template) -> str:
         """Based on the prompt template, configure the header statement"""
         if isinstance(template, SimplePromptTemplate):
-            return f"\n{"=" * 10} SIMPLE PROMPT TEMPLATE WITH NO GUESSES {"=" * 10}"
+            return f"\n{'=' * 10} SIMPLE PROMPT TEMPLATE WITH NO GUESSES {'=' * 10}"
         else:
             return f"\n{'=' * 10} JSON PROMPT TEMPLATE WITH NO GUESSES {'=' * 10}"
 
@@ -184,6 +180,7 @@ class TestPromptTemplateFactory:
         with pytest.raises(ValueError, match="Unknown template 'invalid'"):
             PromptTemplateFactory.create_template("invalid")
 
+
 class TestSimplePromptTemplate(BasePromptTemplate):
     """Test suite for SimplePromptTemplate"""
 
@@ -207,6 +204,7 @@ class TestSimplePromptTemplate(BasePromptTemplate):
         """Test that prompt includes response format instruction"""
         prompt = template.format_prompt(empty_game_state)
         assert "Respond with only your guess as a single 5-letter word" in prompt
+
 
 class TestJsonPromptTemplate(BasePromptTemplate):
     """Test suite for JsonPromptTemplate"""

@@ -48,8 +48,8 @@ class SimpleResponseParser(ResponseParser):
     """Parser for simple text responses with quoted words, all-caps, or last word extraction"""
 
     _PAT_QUOTED_WORD = re.compile(r'["\']([A-Za-z]{5})["\']')
-    _PAT_ALL_CAPS = re.compile(r'\b[A-Z]{5}\b')
-    _PAT_5_LETTER_WORDS = re.compile(r'\b[A-Za-z]{5}\b')
+    _PAT_ALL_CAPS = re.compile(r"\b[A-Z]{5}\b")
+    _PAT_5_LETTER_WORDS = re.compile(r"\b[A-Za-z]{5}\b")
 
     def get_parser_name(self) -> str:
         return "simple"
@@ -71,7 +71,7 @@ class SimpleResponseParser(ResponseParser):
         extraction_methods = [
             SimpleResponseParser._extract_quoted_word,
             SimpleResponseParser._extract_all_capitalized_word,
-            SimpleResponseParser._extract_last_word
+            SimpleResponseParser._extract_last_word,
         ]
 
         for method in extraction_methods:
@@ -136,7 +136,7 @@ class JsonResponseParser(ResponseParser):
         try:
             guess = json_data["guess"]
         except KeyError:
-            raise ValueError("JSON response missing 'guess' field")
+            raise ValueError("JSON response missing 'guess' field") from None
 
         # Validate guess format
         is_valid, error_msg = WordleGame.validate_guess_format(guess)
@@ -162,7 +162,7 @@ class JsonResponseParser(ResponseParser):
         try:
             return json_data["reasoning"]
         except KeyError:
-            raise ValueError("JSON response missing 'reasoning' field")
+            raise ValueError("JSON response missing 'reasoning' field") from None
 
     @staticmethod
     def _parse_json_response(response: str) -> dict:
@@ -182,7 +182,7 @@ class JsonResponseParser(ResponseParser):
             response = response.strip()
             return json.loads(response)
         except json.JSONDecodeError as e:
-            raise ValueError(f"Failed to parse JSON response: {e}")
+            raise ValueError(f"Failed to parse JSON response: {e}") from e
 
 
 class ResponseParserFactory:

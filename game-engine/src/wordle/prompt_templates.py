@@ -61,7 +61,7 @@ class PromptTemplate(ABC):
     @staticmethod
     def insert_feedback(prompt: str, feedback: str) -> str:
         """Insert feedback into prompt at a specific location - shared across all templates"""
-        return prompt + feedback # Default: append
+        return prompt + feedback  # Default: append
 
 
 class SimplePromptTemplate(PromptTemplate):
@@ -108,6 +108,7 @@ class JsonPromptTemplate(PromptTemplate):
         prompt = self._add_current_state(prompt, game_state)
 
         # Add JSON-specific instructions
+        # ruff: noqa: E501 # Long reasoning text in JSON example
         prompt += textwrap.dedent("""
         IMPORTANT: You must respond in valid JSON format with exactly two fields:
         {

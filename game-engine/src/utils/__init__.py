@@ -1,1 +1,1 @@
-""" Utils package for the Wordle Benchmark project """
+"""Utils package for the Wordle Benchmark project"""

@@ -19,10 +19,12 @@ def llm_client():
     """Create a LLM client for testing."""
     return OpenRouterClient(api_key="test-key", model="test-model")
 
+
 @pytest.fixture
 def template():
     """Create a template for testing."""
-    return PromptTemplateFactory.create_template("json") # using json since that is the current default
+    return PromptTemplateFactory.create_template("json")  # using json since that is the current default
+
 
 @pytest.fixture
 def parser():
@@ -38,7 +40,7 @@ def game_runner(word_list, llm_client, template, parser):
         llm_client=llm_client,
         prompt_template=template,
         response_parser=parser,
-        target_word="CRANE"
+        target_word="CRANE",
     )
 
 
@@ -70,7 +72,7 @@ class TestGameRunner:
 
         # Mock just the method we need
         json_response = '{"reasoning": "Starting with common letters", "guess": "STARE"}'
-        with patch.object(llm_client, 'generate_response', return_value=json_response):
+        with patch.object(llm_client, "generate_response", return_value=json_response):
             game_runner._make_guess_attempt()
 
         assert game_runner.game.guesses[-1] == "STARE"
@@ -84,10 +86,10 @@ class TestGameRunner:
         """
         json_responses = [
             '{"reasoning": "Starting with vowels and common consonants", "guess": "STARE"}',
-            '{"reasoning": "Based on feedback, trying the target word", "guess": "CRANE"}'
+            '{"reasoning": "Based on feedback, trying the target word", "guess": "CRANE"}',
         ]
 
-        with patch.object(llm_client, 'generate_response', side_effect=json_responses):
+        with patch.object(llm_client, "generate_response", side_effect=json_responses):
             result = game_runner.run_complete_game()
 
         assert result.game_state.won is True
@@ -107,10 +109,10 @@ class TestGameRunner:
             '{"reasoning": "Testing new consonant combinations", "guess": "MOUND"}',
             '{"reasoning": "Exploring different letter patterns", "guess": "FIFTY"}',
             '{"reasoning": "Trying another combination", "guess": "BUMPS"}',
-            '{"reasoning": "Final attempt with remaining letters", "guess": "GHOST"}'
+            '{"reasoning": "Final attempt with remaining letters", "guess": "GHOST"}',
         ]
 
-        with patch.object(llm_client, 'generate_response', side_effect=json_responses):
+        with patch.object(llm_client, "generate_response", side_effect=json_responses):
             result = game_runner.run_complete_game()
 
         assert result.game_state.won is False
@@ -130,7 +132,7 @@ class TestGameRunner:
         initial_guesses = len(game_runner.game.guesses)
 
         # When we make a guess attempt and get an LLMError
-        with patch.object(llm_client, 'generate_response', side_effect=LLMError("Simulated LLM failure")):
+        with patch.object(llm_client, "generate_response", side_effect=LLMError("Simulated LLM failure")):
             # Then it should raise the LLM error
             with pytest.raises(LLMError, match="Simulated LLM failure"):
                 game_runner._make_guess_attempt()
@@ -146,15 +148,15 @@ class TestGameRunner:
 
         # Simulate a won game by making an actual guess
         json_response = '{"reasoning": "This will win", "guess": "CRANE"}'
-        with patch.object(llm_client, 'generate_response', return_value=json_response):
+        with patch.object(llm_client, "generate_response", return_value=json_response):
             game_runner._make_guess_attempt()
 
         # When we create the result
-        with patch('wordle.game_runner.datetime') as mock_datetime:
+        with patch("wordle.game_runner.datetime") as mock_datetime:
             mock_datetime.now.return_value = datetime(2025, 1, 15, 10, 0, 30)
             mock_datetime.strftime = datetime.strftime
 
-            with patch.object(game_runner, '_log_game_summary'):  # Skip logging for test
+            with patch.object(game_runner, "_log_game_summary"):  # Skip logging for test
                 result = game_runner._create_result()
 
         # Then the result should contain real game data
@@ -186,7 +188,7 @@ class TestGameRunner:
         game_runner.start_time = datetime(2025, 1, 15, 10, 0, 0)
 
         # When we create an error result
-        with patch('wordle.game_runner.datetime') as mock_datetime:
+        with patch("wordle.game_runner.datetime") as mock_datetime:
             mock_datetime.now.return_value = datetime(2025, 1, 15, 10, 0, 15)
 
             result = game_runner._create_error_result("Something went wrong")
@@ -207,7 +209,7 @@ class TestGameRunner:
 
         # Make a successful guess first to establish partial state
         json_response = '{"reasoning": "Starting with common letters", "guess": "STARE"}'
-        with patch.object(llm_client, 'generate_response', return_value=json_response):
+        with patch.object(llm_client, "generate_response", return_value=json_response):
             game_runner._make_guess_attempt()
 
         # Verify we have some game progress
@@ -215,7 +217,7 @@ class TestGameRunner:
         assert game_runner.game.guesses[0] == "STARE"
 
         # When we create an error result
-        with patch('wordle.game_runner.datetime') as mock_datetime:
+        with patch("wordle.game_runner.datetime") as mock_datetime:
             mock_datetime.now.return_value = datetime(2025, 1, 15, 10, 0, 15)
 
             result = game_runner._create_error_result("Simulated failure after partial progress")
@@ -254,10 +256,10 @@ class TestGameRunnerRetryLogic:
         # Mock LLM responses: first invalid, then valid
         json_responses = [
             '{"reasoning": "Trying a random word", "guess": "ZXXCV"}',  # Invalid word
-            '{"reasoning": "Trying a real word", "guess": "STARE"}'  # Valid word
+            '{"reasoning": "Trying a real word", "guess": "STARE"}',  # Valid word
         ]
 
-        with patch.object(llm_client, 'generate_response', side_effect=json_responses):
+        with patch.object(llm_client, "generate_response", side_effect=json_responses):
             game_runner._make_guess_attempt()
 
         # Should have made the valid guess
@@ -285,10 +287,10 @@ class TestGameRunnerRetryLogic:
         json_responses = [
             '{"reasoning": "First try", "guess": "ZXXCV"}',  # Invalid
             '{"reasoning": "Second try", "guess": "QWERT"}',  # Invalid
-            '{"reasoning": "Third try", "guess": "STARE"}'  # Valid
+            '{"reasoning": "Third try", "guess": "STARE"}',  # Valid
         ]
 
-        with patch.object(llm_client, 'generate_response', side_effect=json_responses):
+        with patch.object(llm_client, "generate_response", side_effect=json_responses):
             game_runner._make_guess_attempt()
 
         # Should have made the valid guess
@@ -314,10 +316,10 @@ class TestGameRunnerRetryLogic:
             '{"reasoning": "First guess", "guess": "ZXXCV"}',  # Invalid
             '{"reasoning": "First guess retry", "guess": "STARE"}',  # Valid - completes guess 1
             '{"reasoning": "Second guess", "guess": "QWERT"}',  # Invalid
-            '{"reasoning": "Second guess retry", "guess": "CRANE"}'  # Valid - completes guess 2
+            '{"reasoning": "Second guess retry", "guess": "CRANE"}',  # Valid - completes guess 2
         ]
 
-        with patch.object(llm_client, 'generate_response', side_effect=json_responses):
+        with patch.object(llm_client, "generate_response", side_effect=json_responses):
             game_runner._make_guess_attempt()  # First guess
             game_runner._make_guess_attempt()  # Second guess
 
@@ -337,7 +339,7 @@ class TestGameRunnerRetryLogic:
 
         # Mock LLM to always return invalid words (exceeds MAX_INVALID_WORD_RETRIES)
         json_response = '{"reasoning": "Invalid word", "guess": "ZXXCV"}'
-        with patch.object(llm_client, 'generate_response', return_value=json_response):
+        with patch.object(llm_client, "generate_response", return_value=json_response):
             with pytest.raises(ValueError, match="Could not get valid word from LLM after 5 attempts"):
                 game_runner._make_guess_attempt()
 
@@ -355,10 +357,10 @@ class TestGameRunnerRetryLogic:
         # Mock LLM responses: first unparseable, then valid JSON
         llm_responses = [
             "I think the word is STARE but I can't format it properly",  # Unparseable
-            '{"reasoning": "Trying a common word", "guess": "STARE"}'  # Valid JSON
+            '{"reasoning": "Trying a common word", "guess": "STARE"}',  # Valid JSON
         ]
 
-        with patch.object(llm_client, 'generate_response', side_effect=llm_responses):
+        with patch.object(llm_client, "generate_response", side_effect=llm_responses):
             game_runner._make_guess_attempt()
 
         # Should have made the valid guess
@@ -380,10 +382,10 @@ class TestGameRunnerRetryLogic:
             "Let me try WORLD this time",
             "And again",
             "And again again",
-            "And one more"
+            "And one more",
         ]
 
-        with patch.object(llm_client, 'generate_response', side_effect=llm_responses):
+        with patch.object(llm_client, "generate_response", side_effect=llm_responses):
             with pytest.raises(ValueError, match="Could not parse valid guess from LLM response after 5 attempts"):
                 game_runner._make_guess_attempt()
 
@@ -400,10 +402,10 @@ class TestGameRunnerRetryLogic:
         llm_responses = [
             "I think the word is STARE",  # Parsing error
             '{"reasoning": "Trying random", "guess": "ZXXCV"}',  # Invalid word
-            '{"reasoning": "Trying real word", "guess": "STARE"}'  # Success
+            '{"reasoning": "Trying real word", "guess": "STARE"}',  # Success
         ]
 
-        with patch.object(llm_client, 'generate_response', side_effect=llm_responses):
+        with patch.object(llm_client, "generate_response", side_effect=llm_responses):
             game_runner._make_guess_attempt()
 
         # Should have made the valid guess
@@ -422,7 +424,7 @@ class TestGameRunnerRetryLogic:
         game_runner._initialize_game()
         game_runner.invalid_word_attempts = [
             {"word": "ZXXCV", "turn_number": 1, "attempt_number": 1},
-            {"word": "QWERT", "turn_number": 2, "attempt_number": 1}
+            {"word": "QWERT", "turn_number": 2, "attempt_number": 1},
         ]
 
         prompt = game_runner._generate_prompt()
@@ -457,10 +459,10 @@ class TestGameRunnerRetryLogic:
         json_responses = [
             '{"reasoning": "First try", "guess": "ZXXCV"}',  # Invalid
             '{"reasoning": "Second try", "guess": "STARE"}',  # Valid
-            '{"reasoning": "Final guess", "guess": "CRANE"}'  # Winning guess
+            '{"reasoning": "Final guess", "guess": "CRANE"}',  # Winning guess
         ]
 
-        with patch.object(llm_client, 'generate_response', side_effect=json_responses):
+        with patch.object(llm_client, "generate_response", side_effect=json_responses):
             result = game_runner.run_complete_game()
 
         # Should have completed successfully
@@ -468,5 +470,5 @@ class TestGameRunnerRetryLogic:
         assert result.game_state.won is True
 
         # Invalid attempts count tracked in metadata (words stored in database)
-        assert hasattr(result.metadata, 'total_invalid_attempts')
+        assert hasattr(result.metadata, "total_invalid_attempts")
         assert result.metadata.total_invalid_attempts == 1

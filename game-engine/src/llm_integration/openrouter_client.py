@@ -108,12 +108,7 @@ class OpenRouterClient(LLMClient):
         """Build the API request payload"""
         return {
             "model": self.model,
-            "messages": [
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ],
+            "messages": [{"role": "user", "content": prompt}],
             "temperature": 0.7,
             "max_tokens": 200,  # Sufficient for JSON with brief reasoning
         }
@@ -125,20 +120,15 @@ class OpenRouterClient(LLMClient):
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
             "HTTP-Referer": "https://github.com/colpalm/wordle-benchmark",  # Optional: for analytics
-            "X-Title": "Wordle Benchmark"  # Optional: for analytics
+            "X-Title": "Wordle Benchmark",  # Optional: for analytics
         }
 
         try:
-            return requests.post(
-                url,
-                headers=headers,
-                json=payload,
-                timeout=self.timeout
-            )
+            return requests.post(url, headers=headers, json=payload, timeout=self.timeout)
         except requests.exceptions.Timeout as e:
-            raise LLMTimeoutError(f"Request timed out after {self.timeout}s: {e}")
+            raise LLMTimeoutError(f"Request timed out after {self.timeout}s: {e}") from e
         except requests.exceptions.ConnectionError as e:
-            raise LLMError(f"Connection failed: {e}")
+            raise LLMError(f"Connection failed: {e}") from e
 
     def _handle_http_status_codes(self, response: requests.Response, attempt: int) -> bool:
         """
@@ -162,7 +152,7 @@ class OpenRouterClient(LLMClient):
         try:
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
-            raise LLMError(f"HTTP error {response.status_code}: {e}")
+            raise LLMError(f"HTTP error {response.status_code}: {e}") from e
 
         return False
 
@@ -171,7 +161,7 @@ class OpenRouterClient(LLMClient):
         if attempt >= self.MAX_RETRIES - 1:
             raise LLMRateLimitError("Rate limit exceeded after retries")
 
-        wait_time = self.RATE_LIMIT_DELAY * (2 ** attempt)  # 15s, 30s, 60s
+        wait_time = self.RATE_LIMIT_DELAY * (2**attempt)  # 15s, 30s, 60s
         logger.warning(f"Rate limited, waiting {wait_time}s before retry...")
         time.sleep(wait_time)
 
@@ -182,7 +172,7 @@ class OpenRouterClient(LLMClient):
         try:
             data = response.json()
         except json.JSONDecodeError as e:
-            raise LLMError(f"Failed to parse API response as JSON: {e}")
+            raise LLMError(f"Failed to parse API response as JSON: {e}") from e
 
         # Extract the generated text
         try:
@@ -195,7 +185,7 @@ class OpenRouterClient(LLMClient):
 
             return content, usage_data
         except (KeyError, IndexError) as e:
-            raise LLMError(f"Unexpected API response structure: {e}")
+            raise LLMError(f"Unexpected API response structure: {e}") from e
 
     def _should_retry_attempt(self, attempt: int) -> bool:
         """Check if we should retry the current attempt"""
@@ -223,7 +213,7 @@ class OpenRouterClient(LLMClient):
             "reasoning_tokens": self._last_reasoning_tokens,
             "total_tokens": self._last_total_tokens,
             "cost_usd": self._last_cost_usd,
-            "response_time_ms": self._last_response_time_ms
+            "response_time_ms": self._last_response_time_ms,
         }
 
     def _update_usage_stats(self, usage_data: dict, response_time: float) -> None:
@@ -240,7 +230,9 @@ class OpenRouterClient(LLMClient):
 
             # Calculate cost for this call
             pricing_info = ModelPricing.get_model_pricing(self.model)
-            self._last_cost_usd = pricing_info.calculate_cost(self._last_prompt_tokens, self._last_completion_tokens, self._last_reasoning_tokens)
+            self._last_cost_usd = pricing_info.calculate_cost(
+                self._last_prompt_tokens, self._last_completion_tokens, self._last_reasoning_tokens
+            )
 
         else:
             # Reset if no usage data available

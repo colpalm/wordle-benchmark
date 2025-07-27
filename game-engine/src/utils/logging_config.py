@@ -23,9 +23,7 @@ def configure_logging(log_level: int | str | None = None, log_file: Path | str |
     root_logger.setLevel(effective_log_level)
 
     # Create formatter
-    formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
+    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
     # Clear existing handlers only when not running under pytest
     if not os.environ.get("PYTEST_CURRENT_TEST"):
@@ -49,6 +47,7 @@ def configure_logging(log_level: int | str | None = None, log_file: Path | str |
 
     return root_logger
 
+
 def get_logger(name: str) -> logging.Logger:
     """
     Get a logger for a specific module.
@@ -60,6 +59,7 @@ def get_logger(name: str) -> logging.Logger:
         A configured logger instance
     """
     return logging.getLogger(name)
+
 
 def _determine_log_level(log_level: str | int | None) -> int:
     """
@@ -96,8 +96,7 @@ def _setup_file_handler(log_file: Path | str, formatter: logging.Formatter, root
     # Check if a similar file handler already exists to avoid duplication
     resolved_path = str(Path(log_file).resolve())
     file_handler_exists = any(
-        isinstance(h, logging.FileHandler) and h.baseFilename == resolved_path
-        for h in root_logger.handlers
+        isinstance(h, logging.FileHandler) and h.baseFilename == resolved_path for h in root_logger.handlers
     )
 
     if file_handler_exists:

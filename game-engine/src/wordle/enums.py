@@ -6,6 +6,7 @@ class LetterStatus(str, Enum):
     PRESENT = "present"
     ABSENT = "absent"
 
+
 class GameStatus(str, Enum):
     IN_PROGRESS = "in_progress"
     WON = "won"

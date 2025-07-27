@@ -23,11 +23,7 @@ class TestModelPricing:
         pricing = ModelPricing(input_cost_per_1m=1.0, output_cost_per_1m=3.0)
 
         # 100,000 prompt + 30,000 completion + 20,000 reasoning tokens
-        cost = pricing.calculate_cost(
-            prompt_tokens=100_000,
-            completion_tokens=30_000,
-            reasoning_tokens=20_000
-        )
+        cost = pricing.calculate_cost(prompt_tokens=100_000, completion_tokens=30_000, reasoning_tokens=20_000)
 
         # Expected: (100,000 / 1,000,000) * 1.0 + ((30,000 + 20,000) / 1,000,000) * 3.0
         # = 0.1 + 0.15 = 0.25
@@ -42,14 +38,17 @@ class TestModelPricing:
 
         assert cost == pytest.approx(0.0)
 
-    @pytest.mark.parametrize("model,expected_input,expected_output", [
-        ("openai/gpt-4o-mini", 0.15, 0.60),
-        ("openai/o3", 2.0, 8.0),
-        ("anthropic/claude-sonnet-4", 3.0, 15.0),
-        ("anthropic/claude-opus-4", 15.0, 75.0),
-        ("google/gemini-2.5-flash", 0.30, 2.5),
-        ("google/gemini-2.5-pro", 1.25, 10.0),
-    ])
+    @pytest.mark.parametrize(
+        "model,expected_input,expected_output",
+        [
+            ("openai/gpt-4o-mini", 0.15, 0.60),
+            ("openai/o3", 2.0, 8.0),
+            ("anthropic/claude-sonnet-4", 3.0, 15.0),
+            ("anthropic/claude-opus-4", 15.0, 75.0),
+            ("google/gemini-2.5-flash", 0.30, 2.5),
+            ("google/gemini-2.5-pro", 1.25, 10.0),
+        ],
+    )
     def test_get_model_pricing_known_models(self, model, expected_input, expected_output):
         """Test getting pricing for all known models"""
         pricing = ModelPricing.get_model_pricing(model)

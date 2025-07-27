@@ -19,8 +19,7 @@ logger = get_logger(__name__)
 @pytest.mark.integration
 @pytest.mark.api_calls
 @pytest.mark.skipif(
-    not os.getenv("OPENROUTER_API_KEY"),
-    reason="OPENROUTER_API_KEY required for end-to-end system tests"
+    not os.getenv("OPENROUTER_API_KEY"), reason="OPENROUTER_API_KEY required for end-to-end system tests"
 )
 class TestGameRunnerIntegration:
     """
@@ -39,7 +38,7 @@ class TestGameRunnerIntegration:
         base_dir = Path(__file__).parent.parent.parent / "src" / "wordle"
         return WordList(
             base_valid_words_path=base_dir / "resources" / "wordle-valid-words.txt",
-            added_valid_words_path=base_dir / "resources" / "added_valid_words.log"
+            added_valid_words_path=base_dir / "resources" / "added_valid_words.log",
         )
 
     @pytest.fixture
@@ -85,7 +84,7 @@ class TestGameRunnerIntegration:
             llm_client=llm_client,
             prompt_template=template,
             response_parser=parser,
-            date=test_date  # Fixed date for consistency
+            date=test_date,  # Fixed date for consistency
         )
 
         # Makes real API calls
@@ -164,7 +163,7 @@ class TestGameRunnerIntegration:
             llm_client=llm_client,
             prompt_template=template,
             response_parser=parser,
-            target_word="GLOBE"  # Common word
+            target_word="GLOBE",  # Common word
         )
 
         result = game_runner.run_complete_game()

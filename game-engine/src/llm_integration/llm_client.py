@@ -49,26 +49,32 @@ class LLMClient(ABC):
         """
         pass
 
+
 class LLMError(Exception):
     """Base exception for LLM-related errors."""
+
     pass
 
 
 class LLMTimeoutError(LLMError):
     """Raised when LLM requests timeout."""
+
     pass
 
 
 class LLMRateLimitError(LLMError):
     """Raised when LLM rate limits are exceeded."""
+
     pass
 
 
 class LLMAuthenticationError(LLMError):
     """Raised when LLM authentication fails (an invalid API key, etc.)."""
+
     pass
 
 
 class LLMQuotaExceededError(LLMError):
     """Raised when LLM quota/credits are exhausted."""
+
     pass

@@ -73,7 +73,7 @@ class WordList:
 
         added_words = set()
         try:
-            with open(self.added_valid_words_path, "r", encoding='utf-8') as f:
+            with open(self.added_valid_words_path, "r", encoding="utf-8") as f:
                 for line in f:
                     if ": " in line:
                         word = line.split(": ", 1)[1].strip()
@@ -97,7 +97,7 @@ class WordList:
         valid_words = set()
 
         try:
-            with open(self.base_valid_words_path, "r", encoding='utf-8') as f:
+            with open(self.base_valid_words_path, "r", encoding="utf-8") as f:
                 for line in f:
                     word = line.strip().upper()
                     if self._is_valid_word_format(word):
@@ -109,11 +109,11 @@ class WordList:
             return valid_words
 
         except FileNotFoundError:
-            raise FileNotFoundError(f"Word list file not found: {self.base_valid_words_path.absolute()}")
+            raise FileNotFoundError(f"Word list file not found: {self.base_valid_words_path.absolute()}") from None
         except ValueError:
             raise
         except Exception as e:
-            raise RuntimeError(f"Error loading word list from '{self.base_valid_words_path}': {e}")
+            raise RuntimeError(f"Error loading word list from '{self.base_valid_words_path}': {e}") from e
 
     def _log_word(self, word: str) -> None:
         """Log a new word to the added words file."""
@@ -121,7 +121,7 @@ class WordList:
             # Ensure the directory exists
             self.added_valid_words_path.parent.mkdir(parents=True, exist_ok=True)
 
-            with open(self.added_valid_words_path, "a", encoding='utf-8') as f:
+            with open(self.added_valid_words_path, "a", encoding="utf-8") as f:
                 f.write(f"{datetime.now().isoformat()}: {word}\n")
         except (IOError, PermissionError) as e:
             logger.error(f"Could not log added word to file: {e}")
@@ -132,8 +132,4 @@ class WordList:
         Check if a word meets the basic format requirements.
         Note: Defensive programming - every word should be in valid format when this runs in this class.
         """
-        return (
-                isinstance(word, str) and
-                len(word) == WordList.WORD_LENGTH and
-                word.isalpha()
-        )
+        return isinstance(word, str) and len(word) == WordList.WORD_LENGTH and word.isalpha()

@@ -82,6 +82,7 @@ class TestExtractCapitalizedWord:
         with pytest.raises(ValueError, match="No capitalized 5-letter word found"):
             SimpleResponseParser._extract_all_capitalized_word(response)
 
+
 class TestExtractLastWord:
     """Test suite for _extract_last_word method"""
 
@@ -189,7 +190,7 @@ class TestJsonResponseParser:
 
     def test_invalid_json_format(self, parser):
         """Test invalid JSON format"""
-        response = 'This is not JSON'
+        response = "This is not JSON"
         with pytest.raises(ValueError, match="Failed to parse JSON response"):
             parser.extract_guess(response)
 
@@ -207,10 +208,13 @@ class TestJsonResponseParser:
 class TestResponseParserFactory:
     """Test suite for ResponseParserFactory"""
 
-    @pytest.mark.parametrize("parser_name, expected_class", [
-        ("simple", SimpleResponseParser),
-        ("json", JsonResponseParser),
-    ])
+    @pytest.mark.parametrize(
+        "parser_name, expected_class",
+        [
+            ("simple", SimpleResponseParser),
+            ("json", JsonResponseParser),
+        ],
+    )
     def test_create_parser(self, parser_name, expected_class):
         """Test creating parsers by name"""
         parser = ResponseParserFactory.create_parser(parser_name)

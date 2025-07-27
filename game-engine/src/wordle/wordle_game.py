@@ -40,13 +40,16 @@ class WordleGame:
         else:
             self.target_word = self._fetch_daily_word(date).upper()
 
-        # Since we're not using the official NYT valid word list, we need to ensure the target word is in our valid word list
+        # Since we're not using the official NYT valid word list,
+        # we need to ensure the target word is in our valid word list
         self._ensure_target_is_valid()
 
     def _ensure_target_is_valid(self) -> None:
         """Ensure the target word is in our valid word list. Add it if not."""
         if not self.word_list.is_valid(self.target_word):
-            logger.warning(f"Target word '{self.target_word}' not in valid words list. Adding it to ensure winnability.")
+            logger.warning(
+                f"Target word '{self.target_word}' not in valid words list. Adding it to ensure winnability."
+            )
             self.word_list.add_word(self.target_word)
         else:
             logger.debug(f"Target word '{self.target_word}' is valid.")
@@ -69,7 +72,7 @@ class WordleGame:
             return solution
 
         except requests.RequestException as e:
-            raise RuntimeError(f"Failed to fetch Wordle solution from NYT API: {e}")
+            raise RuntimeError(f"Failed to fetch Wordle solution from NYT API: {e}") from e
 
     def _evaluate_guess(self, guess: str) -> list[dict]:
         """
@@ -104,19 +107,17 @@ class WordleGame:
                 result.append(temp_result[i])
             elif letter in target_letter_counts and target_letter_counts[letter] > 0:
                 # Letter is present but in the wrong position (yellow)
-                result.append({
-                    "position": i,
-                    "letter": letter,
-                    "status": LetterStatus.PRESENT.value,
-                })
+                result.append(
+                    {
+                        "position": i,
+                        "letter": letter,
+                        "status": LetterStatus.PRESENT.value,
+                    }
+                )
                 target_letter_counts[letter] -= 1
             else:
                 # Letter is absent (gray)
-                result.append({
-                    "position": i,
-                    "letter": letter,
-                    "status": LetterStatus.ABSENT.value
-                })
+                result.append({"position": i, "letter": letter, "status": LetterStatus.ABSENT.value})
 
         return result
 
@@ -160,7 +161,9 @@ class WordleGame:
             "reasoning": reasoning,
             "status": self.status.value,
             "guesses_remaining": self.MAX_GUESSES - len(self.guesses),
-            "target_word": self.target_word if self.status != GameStatus.IN_PROGRESS else None # Hidden from LLM during gameplay
+            "target_word": self.target_word
+            if self.status != GameStatus.IN_PROGRESS
+            else None,  # Hidden from LLM during gameplay
         }
 
     def get_game_state(self) -> dict:
@@ -172,7 +175,9 @@ class WordleGame:
             "guess_reasoning": self.guess_reasoning,
             "guesses_made": len(self.guesses),
             "guesses_remaining": self.MAX_GUESSES - len(self.guesses),
-            "target_word": self.target_word if self.status != GameStatus.IN_PROGRESS else None, # Hidden from LLM during gameplay
+            "target_word": self.target_word
+            if self.status != GameStatus.IN_PROGRESS
+            else None,  # Hidden from LLM during gameplay
             "won": self.status == GameStatus.WON,
             "game_over": self.status != GameStatus.IN_PROGRESS,
         }
@@ -195,81 +200,3 @@ class WordleGame:
         if not input_guess.isalpha():
             return False, "Guess must only contain alphabetical characters"
         return True, ""
-
-
-# Example usage and testing
-if __name__ == "__main__":
-    from pathlib import Path
-
-    from utils.logging_config import configure_logging
-    from wordle.response_parser import JsonResponseParser
-
-    # Configure logging
-    configure_logging()
-
-    # Setup WordList
-    resource_dir = Path(__file__).parent / "resources"
-    valid_words = WordList(
-        base_valid_words_path=resource_dir / "wordle-valid-words.txt",
-        added_valid_words_path=resource_dir / "added_valid_words.log",
-    )
-
-    # Test with a known word
-    logger.info("=== Testing with known word 'CRANE' ===")
-    game = WordleGame(word_list=valid_words, target_word="CRANE")
-
-    test_guesses = ["STARE", "CRANE"]
-
-    for guess in test_guesses:
-        try:
-            result = game.make_guess(guess)
-            logger.info(f"Guess: {guess}")
-            logger.info(f"Status: {result['status']}")
-            logger.info("Letter results:")
-            for letter_result in result['result']:
-                logger.info(f"  {letter_result['letter']} at position {letter_result['position']}: {letter_result['status']}")
-
-            if result['status'] != 'in_progress':
-                logger.info(f"Game Over! Target word was: {result['target_word']}")
-                break
-
-        except Exception as e:
-            logger.error(f"Error making guess '{guess}': {e}")
-
-    # Test with reasoning tracking
-    logger.info("=" * 60)
-    logger.info("=== Testing with reasoning tracking ===")
-    game = WordleGame(word_list=valid_words, target_word="CRANE")
-    parser = JsonResponseParser()
-
-    # Simulate LLM responses with reasoning
-    llm_responses = [
-        '{"reasoning": "Starting with a common word with good vowel coverage", "guess": "STARE"}',
-        '{"reasoning": "E and A are correct positions, R is present but wrong position. Trying common word with R in different position.", "guess": "CRANE"}'
-    ]
-
-    for response in llm_responses:
-        try:
-            # Extract guess and reasoning using parser
-            guess = parser.extract_guess(response)
-            reasoning = parser.extract_reasoning(response)
-
-            # Make guess with reasoning
-            result = game.make_guess(guess, reasoning)
-
-            logger.info(f"Guess: {guess}")
-            logger.info(f"Reasoning: {reasoning}")
-            logger.info(f"Status: {result['status']}")
-
-            if result['status'] != 'in_progress':
-                logger.info(f"Game Over! Target word was: {result['target_word']}")
-
-                # Show final game state with all reasoning
-                final_state = game.get_game_state()
-                logger.info("Full game reasoning:")
-                for i, (guess, reasoning) in enumerate(zip(final_state['guesses'], final_state['guess_reasoning'], strict=False)):
-                    logger.info(f"  {i + 1}. {guess}: {reasoning or 'No reasoning provided'}")
-                break
-
-        except Exception as e:
-            logger.error(f"Error processing response '{response}': {e}")

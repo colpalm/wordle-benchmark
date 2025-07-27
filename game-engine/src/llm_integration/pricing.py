@@ -4,6 +4,7 @@ from dataclasses import dataclass
 @dataclass(frozen=True)
 class ModelPricing:
     """Pricing information for a specific model"""
+
     input_cost_per_1m: float
     output_cost_per_1m: float
 
@@ -35,4 +36,5 @@ MODEL_PRICING: dict[str, ModelPricing] = {
     "anthropic/claude-opus-4": ModelPricing(15.0, 75.0),
     "google/gemini-2.5-flash": ModelPricing(0.30, 2.5),
     "google/gemini-2.5-pro": ModelPricing(1.25, 10.0),
+    "meta-llama/llama-3.3-70b-instruct:free": ModelPricing(0.0, 0.0),  # Free tier model for testing
 }

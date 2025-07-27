@@ -9,8 +9,10 @@ from wordle.enums import GameStatus, LetterStatus
 
 ## Database-aligned Pydantic models for SQLAlchemy entities ##
 
+
 class Game(BaseModel):
     """Pydantic model matching Game SQLAlchemy table."""
+
     id: Optional[uuid.UUID] = None
     model_name: str = Field(max_length=100)
     template_name: str = Field(max_length=20)
@@ -28,6 +30,7 @@ class Game(BaseModel):
 
 class GameTurn(BaseModel):
     """Pydantic model matching GameTurn SQLAlchemy table."""
+
     id: Optional[uuid.UUID] = None
     game_id: uuid.UUID
     turn_number: int = Field(ge=1, le=6)
@@ -40,6 +43,7 @@ class GameTurn(BaseModel):
 
 class LLMInteraction(BaseModel):
     """Pydantic model matching LLMInteraction SQLAlchemy table."""
+
     id: Optional[uuid.UUID] = None
     game_id: uuid.UUID
     turn_number: int = Field(ge=1, le=6)
@@ -62,6 +66,7 @@ class LLMInteraction(BaseModel):
 
 class InvalidWordAttempt(BaseModel):
     """Pydantic model matching InvalidWordAttempt SQLAlchemy table."""
+
     id: Optional[uuid.UUID] = None
     game_id: uuid.UUID
     turn_number: int = Field(ge=1, le=6)
@@ -72,6 +77,7 @@ class InvalidWordAttempt(BaseModel):
 
 class GameUsageSummary(BaseModel):
     """Pydantic model matching GameUsageSummary SQLAlchemy view."""
+
     game_id: uuid.UUID
     total_tokens_input: Optional[int] = None
     total_tokens_output: Optional[int] = None
@@ -83,6 +89,7 @@ class GameUsageSummary(BaseModel):
 
 
 ## Runtime Pydantic models ##
+
 
 class LetterResult(BaseModel):
     position: int = Field(ge=0, le=4)

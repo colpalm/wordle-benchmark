@@ -20,15 +20,16 @@ class Base(DeclarativeBase):
 
 class Game(Base):
     """Core game data for fast queries and leaderboards."""
-    __tablename__ = 'games'
+
+    __tablename__ = "games"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     model_name: Mapped[str] = mapped_column(String(100))
     template_name: Mapped[str] = mapped_column(String(20))  # "simple", "json"
-    parser_name: Mapped[str] = mapped_column(String(20))    # "simple", "json"
+    parser_name: Mapped[str] = mapped_column(String(20))  # "simple", "json"
     target_word: Mapped[str] = mapped_column(String(5))
-    date: Mapped[date] = mapped_column(Date)                # Wordle puzzle date
-    status: Mapped[str] = mapped_column(String(20))         # "won", "lost"
+    date: Mapped[date] = mapped_column(Date)  # Wordle puzzle date
+    status: Mapped[str] = mapped_column(String(20))  # "won", "lost"
     guesses_count: Mapped[int] = mapped_column(Integer)
     won: Mapped[bool] = mapped_column(Boolean)
     duration_seconds: Mapped[float] = mapped_column(Float)
@@ -44,15 +45,16 @@ class Game(Base):
 
 class GameTurn(Base):
     """Turn-by-turn data for Wordle UI recreation and analysis."""
-    __tablename__ = 'game_turns'
+
+    __tablename__ = "game_turns"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    game_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey(GAME_ID_FK, ondelete='CASCADE'))
+    game_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey(GAME_ID_FK, ondelete="CASCADE"))
     turn_number: Mapped[int] = mapped_column(Integer)
     guess: Mapped[str] = mapped_column(String(5))
     reasoning: Mapped[Optional[str]] = mapped_column(Text)  # NULL for simple template
     is_correct: Mapped[bool] = mapped_column(Boolean)
-    letter_results: Mapped[List[dict]] = mapped_column(JSONB)     # Full letter-by-letter feedback
+    letter_results: Mapped[List[dict]] = mapped_column(JSONB)  # Full letter-by-letter feedback
     created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
 
     # Relationships
@@ -61,10 +63,11 @@ class GameTurn(Base):
 
 class LLMInteraction(Base):
     """LLM interaction debugging and performance analysis."""
-    __tablename__ = 'llm_interactions'
+
+    __tablename__ = "llm_interactions"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    game_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey(GAME_ID_FK, ondelete='CASCADE'))
+    game_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey(GAME_ID_FK, ondelete="CASCADE"))
     turn_number: Mapped[int] = mapped_column(Integer)
     prompt_text: Mapped[str] = mapped_column(Text)
     raw_response: Mapped[str] = mapped_column(Text)
@@ -88,10 +91,11 @@ class LLMInteraction(Base):
 
 class InvalidWordAttempt(Base):
     """Invalid word attempts for retry analysis."""
-    __tablename__ = 'invalid_word_attempts'
+
+    __tablename__ = "invalid_word_attempts"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    game_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey(GAME_ID_FK, ondelete='CASCADE'))
+    game_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey(GAME_ID_FK, ondelete="CASCADE"))
     turn_number: Mapped[int] = mapped_column(Integer)
     attempted_word: Mapped[str] = mapped_column(String(5))
     attempt_number: Mapped[int] = mapped_column(Integer)
@@ -103,8 +107,9 @@ class InvalidWordAttempt(Base):
 
 class GameUsageSummary(Base):
     """Database view for aggregated usage statistics per game."""
-    __tablename__ = 'game_usage_summary'
-    __table_args__ = {'info': {'is_view': True}}
+
+    __tablename__ = "game_usage_summary"
+    __table_args__ = {"info": {"is_view": True}}
 
     game_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
     total_tokens_input: Mapped[Optional[int]] = mapped_column(Integer)
@@ -117,10 +122,10 @@ class GameUsageSummary(Base):
 
 
 # Production optimized indexes
-Index('idx_games_daily_active', Game.model_name, Game.date)
-Index('idx_games_date_status', Game.date, Game.status, Game.won)
-Index('idx_games_model_performance', Game.model_name, Game.won, Game.guesses_count)
-Index('idx_game_turns_game_id', GameTurn.game_id, GameTurn.turn_number)
-Index('idx_llm_interactions_game_id', LLMInteraction.game_id, LLMInteraction.turn_number)
-Index('idx_invalid_attempts_game_id', InvalidWordAttempt.game_id)
-Index('idx_games_target_word', Game.target_word, Game.won)
+Index("idx_games_daily_active", Game.model_name, Game.date)
+Index("idx_games_date_status", Game.date, Game.status, Game.won)
+Index("idx_games_model_performance", Game.model_name, Game.won, Game.guesses_count)
+Index("idx_game_turns_game_id", GameTurn.game_id, GameTurn.turn_number)
+Index("idx_llm_interactions_game_id", LLMInteraction.game_id, LLMInteraction.turn_number)
+Index("idx_invalid_attempts_game_id", InvalidWordAttempt.game_id)
+Index("idx_games_target_word", Game.target_word, Game.won)
