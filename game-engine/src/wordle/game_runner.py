@@ -7,7 +7,7 @@ from typing import Any, Optional
 from database.service import GameDatabaseService
 from llm_integration.llm_client import LLMClient
 from llm_integration.openrouter_client import OpenRouterClient
-from utils.logging_config import get_logger
+from utils.logging_config import configure_logging, get_logger
 from wordle.enums import GameStatus, LetterStatus
 from wordle.models import GameMetadata, GameResult, GameState, LetterResult, UsageStats
 from wordle.prompt_templates import PromptTemplate, PromptTemplateFactory
@@ -23,14 +23,16 @@ class GameRunner:
     GameRunner that orchestrates a complete Wordle game session.
     """
 
-    MODELS_TO_RUN = [
-        "openai/gpt-4o-mini",
-        "openai/o3",
-        "anthropic/claude-sonnet-4",
-        "anthropic/claude-opus-4",
-        "google/gemini-2.5-flash",
-        "google/gemini-2.5-pro",
-    ]
+    @staticmethod
+    def get_models_to_run() -> list[str]:
+        """Get models to run from the environment variable"""
+        models_env = os.getenv("WORDLE_MODELS_TO_RUN")
+        if not models_env:
+            raise ValueError("WORDLE_MODELS_TO_RUN environment variable not set")
+
+        models = [model.strip() for model in models_env.split(",") if model.strip()]
+        logger.info(f"Using models: {models}")
+        return models
 
     MAX_INVALID_WORD_ATTEMPTS = 5  # How many attempts for invalid words per guess
     MAX_PARSING_ATTEMPTS = 5  # How many attempts for parsing failures per guess
@@ -487,6 +489,8 @@ class GameRunner:
 
 
 if __name__ == "__main__":
+    configure_logging()
+
     # Setup file paths with env var support
     BASE_DIR = Path(__file__).parent
     DEFAULT_WORDS_FILE = BASE_DIR / "resources" / "wordle-valid-words.txt"
@@ -506,7 +510,7 @@ if __name__ == "__main__":
         print("OPENROUTER_API_KEY environment variable is required")
         sys.exit(1)
 
-    for model in GameRunner.MODELS_TO_RUN:
+    for model in GameRunner.get_models_to_run():
         try:
             llm_client = OpenRouterClient(api_key=os.getenv("OPENROUTER_API_KEY"), model=model)
 

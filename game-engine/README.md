@@ -1,8 +1,8 @@
 # Python Backend
 
-Run Wordle Logic:
+Run Wordle Game:
 ```shell
-uv run --directory src python -m wordle.wordle_game
+uv run --directory src --env-file ../.env python -m wordle.game_runner
 ```
 
 Run Test Suite:
