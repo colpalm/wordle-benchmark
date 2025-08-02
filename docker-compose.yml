@@ -1,0 +1,46 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: wordle-db
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    ports:
+      - "${DB_PORT}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  game-engine:
+    image: wordle-benchmark/game-engine:${VERSION}
+    container_name: wordle-game-engine
+    environment:
+      # Required LLM configuration
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - WORDLE_MODELS_TO_RUN=${WORDLE_MODELS_TO_RUN}
+      
+      # Database configuration
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      
+      # Optional configuration
+      - WORDLE_LOG_LEVEL=${WORDLE_LOG_LEVEL:-INFO}
+      - DB_ECHO_SQL=${DB_ECHO_SQL:-false}
+      - WORDLE_WORDS_FILE=${WORDLE_WORDS_FILE:-}
+      - WORDLE_LOG_FILE=${WORDLE_LOG_FILE:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./game-engine/src:/app/src # For development hot-reloading
+
+volumes:
+  postgres_data:

@@ -1,0 +1,65 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Docker
+.dockerignore
+docker-compose.yml
+Dockerfile
+
+# Python virtual environments
+.venv
+venv
+*/.venv
+*/venv
+env/
+*/env/
+
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.ruff_cache/
+celerybeat-schedule
+.coverage
+.coverage.*
+
+# Test directories
+**/tests/
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# IDEs and editors
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs and databases
+*.log
+*.db
+*.sqlite3
+*.sql
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+*.egg
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Planning and documentation
+planning/
+scripts/
+README.md
+LICENSE
+Makefile

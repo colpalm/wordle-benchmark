@@ -3,9 +3,30 @@ Testing LLM performance with Wordle
 
 ## Quick Start
 
-```bash
-# Run the standard build process (lint + tests)
-make build-backend
-```
+### Docker Deployment (Recommended)
 
-Individual targets for linting and testing are also available.
+1. **Setup Environment:** Copy and configure your environment variables:
+   ```bash
+   cp .env.example .env
+   # Edit .env with your OPENROUTER_API_KEY and other settings
+   ```
+
+2. **Build the Project:** Run the full build process (lint, test, and build Docker image):
+   ```bash
+   make build-backend
+   ```
+
+3. **Deploy Services:** Start all services (PostgreSQL + game-engine):
+   ```bash
+   make docker-up
+   ```
+
+4. **Stop Services:**
+   ```bash
+   make docker-down   # Stop containers
+   make docker-clean  # Stop containers and remove volumes (full reset)
+   ```
+
+### Available Commands
+
+- `make help` - Show all available targets
