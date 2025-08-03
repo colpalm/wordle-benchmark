@@ -27,8 +27,8 @@ class OpenRouterClient(LLMClient):
 
     BASE_URL = "https://openrouter.ai/api/v1"
     DEFAULT_TIMEOUT = 30
-    MAX_RETRIES = 3
-    RETRY_DELAY = 1.0  # For general errors (network issues, etc.)
+    MAX_RETRIES = 3  # total attempts (1 attempt and 2 retries)
+    RETRY_DELAY = 5.0  # For general errors (network issues, server errors)
     RATE_LIMIT_DELAY = 15.0  # For rate limits specifically
 
     def __init__(self, api_key: str, model: str, timeout: Optional[int] = None):
@@ -148,6 +148,10 @@ class OpenRouterClient(LLMClient):
             self._handle_rate_limit(attempt)
             return True  # Signal caller to continue retry loop
 
+        if response.status_code >= 500:
+            self._handle_server_error(attempt)
+            return True  # Signal caller to continue retry loop
+
         # Raise for other HTTP errors
         try:
             response.raise_for_status()
@@ -161,8 +165,17 @@ class OpenRouterClient(LLMClient):
         if attempt >= self.MAX_RETRIES - 1:
             raise LLMRateLimitError("Rate limit exceeded after retries")
 
-        wait_time = self.RATE_LIMIT_DELAY * (2**attempt)  # 15s, 30s, 60s
+        wait_time = self.RATE_LIMIT_DELAY * (2**attempt)  # 15s, 30s
         logger.warning(f"Rate limited, waiting {wait_time}s before retry...")
+        time.sleep(wait_time)
+
+    def _handle_server_error(self, attempt: int) -> None:
+        """Handle server errors (5xx) with exponential backoff"""
+        if attempt >= self.MAX_RETRIES - 1:
+            raise LLMError("Server error persisted after retries")
+
+        wait_time = self.RETRY_DELAY * (2**attempt)  # 5s, 10s
+        logger.warning(f"Server error (5xx), waiting {wait_time}s before retry...")
         time.sleep(wait_time)
 
     @staticmethod

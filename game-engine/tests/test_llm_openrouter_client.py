@@ -144,15 +144,56 @@ class TestOpenRouterClient:
         assert mock_post.call_count == OpenRouterClient.MAX_RETRIES
 
     @patch("llm_integration.openrouter_client.requests.post")
-    def test_other_http_error(self, mock_post, client):
-        """Test handling of other HTTP errors (e.g., 500)"""
+    @patch("llm_integration.openrouter_client.time.sleep")  # Mock sleep to speed up tests
+    def test_server_error_with_retry_success(self, mock_sleep, mock_post, client):
+        """Test server error (5xx) with successful retry"""
+        # First call returns 500, second call succeeds
+        mock_response_1 = Mock()
+        mock_response_1.status_code = 500
+
+        mock_response_2 = Mock()
+        mock_response_2.status_code = 200
+        mock_response_2.json.return_value = {"choices": [{"message": {"content": "CRANE"}}]}
+
+        mock_post.side_effect = [mock_response_1, mock_response_2]
+
+        result = client.generate_response("test")
+
+        assert result == "CRANE"
+        assert mock_post.call_count == 2
+        mock_sleep.assert_called_once_with(5.0)  # Should sleep 5s before retry
+
+    @patch("llm_integration.openrouter_client.requests.post")
+    @patch("llm_integration.openrouter_client.time.sleep")
+    def test_server_error_max_retries_exceeded(self, mock_sleep, mock_post, client):
+        """Test server error when max retries are exceeded"""
+        # All calls return 500
         mock_response = Mock()
         mock_response.status_code = 500
-        mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError("Server Error")
         mock_post.return_value = mock_response
 
-        with pytest.raises(LLMError, match="HTTP error 500"):
+        with pytest.raises(LLMError, match="Server error persisted after retries"):
             client.generate_response("test")
+
+        assert mock_post.call_count == OpenRouterClient.MAX_RETRIES
+        # Should have exponential backoff: 5s, 10s
+        expected_delays = [5.0, 10.0]
+        actual_delays = [call[0][0] for call in mock_sleep.call_args_list]
+        assert actual_delays == expected_delays
+
+    @patch("llm_integration.openrouter_client.requests.post")
+    def test_other_http_error_no_retry(self, mock_post, client):
+        """Test handling of other HTTP errors (4xx) that should not be retried"""
+        mock_response = Mock()
+        mock_response.status_code = 400
+        mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError("Bad Request")
+        mock_post.return_value = mock_response
+
+        with pytest.raises(LLMError, match="HTTP error 400"):
+            client.generate_response("test")
+
+        # Should only be called once (no retries for 4xx errors)
+        assert mock_post.call_count == 1
 
     @patch("llm_integration.openrouter_client.requests.post")
     @patch("llm_integration.openrouter_client.time.sleep")
