@@ -4,7 +4,7 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 
 from alembic import context
-from database.config import LocalDevConfig
+from database.config import ApplicationConfig
 
 # Import our database models for autogenerate support
 from database.models import Base
@@ -28,13 +28,13 @@ target_metadata = Base.metadata
 
 # Set database URL from environment or configuration
 def get_database_url():
-    """Get database URL from the environment or use LocalDevConfig default."""
+    """Get database URL from the environment or use ApplicationConfig default."""
     url = os.getenv("DATABASE_URL")
     if url:
         return url
 
-    # Fall back to LocalDevConfig
-    return LocalDevConfig().database_url
+    # Fall back to ApplicationConfig
+    return ApplicationConfig().database_url
 
 
 # Override sqlalchemy.url if not set

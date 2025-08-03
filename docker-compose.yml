@@ -34,8 +34,6 @@ services:
       # Optional configuration
       - WORDLE_LOG_LEVEL=${WORDLE_LOG_LEVEL:-INFO}
       - DB_ECHO_SQL=${DB_ECHO_SQL:-false}
-      - WORDLE_WORDS_FILE=${WORDLE_WORDS_FILE:-}
-      - WORDLE_LOG_FILE=${WORDLE_LOG_FILE:-}
     depends_on:
       db:
         condition: service_healthy

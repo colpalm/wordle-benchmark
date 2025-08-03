@@ -4,6 +4,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
 
+from database.config import ApplicationConfig
 from database.service import GameDatabaseService
 from llm_integration.llm_client import LLMClient
 from llm_integration.openrouter_client import OpenRouterClient
@@ -439,12 +440,22 @@ class GameRunner:
             total_invalid_attempts=len(self.invalid_word_attempts),
         )
 
-        return GameResult(
+        result = GameResult(
             success=False,
             game_state=game_state,  # Partial state when available or else None
             metadata=metadata,
             error=error_message,
         )
+
+        # Save to database if service is provided
+        if self.db_service:
+            try:
+                self.db_service.save_game_result(result, self.llm_interactions, self.invalid_word_attempts)
+                logger.debug("Error result saved to database")
+            except Exception as e:
+                logger.warning(f"Failed to save error result to database: {e}")
+
+        return result
 
     def _log_game_summary(self, game_state: dict[str, Any], duration: float) -> None:
         """Log a summary of the completed game."""
@@ -510,11 +521,15 @@ if __name__ == "__main__":
         print("OPENROUTER_API_KEY environment variable is required")
         sys.exit(1)
 
+    # Setup database service
+    db_config = ApplicationConfig()
+    db_service = GameDatabaseService(db_config)
+
     for model in GameRunner.get_models_to_run():
         try:
             llm_client = OpenRouterClient(api_key=os.getenv("OPENROUTER_API_KEY"), model=model)
 
-            runner = GameRunner(word_list, llm_client, template, parser)
+            runner = GameRunner(word_list, llm_client, template, parser, db_service=db_service)
             result = runner.run_complete_game()
         except Exception as e:
             print(f"{model} failed: {e}")

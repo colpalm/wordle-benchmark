@@ -20,23 +20,26 @@ class DatabaseConfig(ABC):
         return False
 
 
-class LocalDevConfig(DatabaseConfig):
-    """
-    Local development database configuration.
-
-    For running the full application locally during development.
-    Assumes a persistent PostgreSQL database is already running.
-    """
+class ApplicationConfig(DatabaseConfig):
+    """Main application database configuration (dev/staging/production)."""
 
     def __init__(self, database_url: Optional[str] = None):
         self._database_url = database_url
+        self.env = os.getenv("ENVIRONMENT", "development")
 
     @property
     def database_url(self) -> str:
         if self._database_url:
             return self._database_url
 
-        # Default local PostgreSQL setup
+        # Production: require explicit DATABASE_URL
+        if self.env == "production":
+            url = os.getenv("DATABASE_URL")
+            if not url:
+                raise ValueError("DATABASE_URL environment variable is required for production")
+            return url
+
+        # Development/staging: build from components with defaults
         host = os.getenv("DB_HOST", "localhost")
         port = os.getenv("DB_PORT", "5432")
         user = os.getenv("DB_USER", "postgres")
@@ -47,29 +50,10 @@ class LocalDevConfig(DatabaseConfig):
 
     @property
     def echo_sql(self) -> bool:
-        return os.getenv("DB_ECHO_SQL", "false").lower() == "true"
-
-
-class ProductionConfig(DatabaseConfig):
-    """Production database configuration."""
-
-    def __init__(self, database_url: Optional[str] = None):
-        self._database_url = database_url
-
-    @property
-    def database_url(self) -> str:
-        if self._database_url:
-            return self._database_url
-
-        # Production should always use an explicit environment variable
-        url = os.getenv("DATABASE_URL")
-        if not url:
-            raise ValueError("DATABASE_URL environment variable is required for production")
-        return url
-
-    @property
-    def echo_sql(self) -> bool:
-        # Never echo SQL in production unless explicitly enabled
+        # Never echo in production unless explicit
+        if self.env == "production":
+            return os.getenv("DB_ECHO_SQL", "false").lower() == "true"
+        # Default to false in dev too, enable when needed
         return os.getenv("DB_ECHO_SQL", "false").lower() == "true"
 
 

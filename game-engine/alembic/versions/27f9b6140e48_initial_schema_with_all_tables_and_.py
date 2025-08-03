@@ -36,7 +36,6 @@ def upgrade() -> None:
         sa.Column("won", sa.Boolean(), nullable=False),
         sa.Column("duration_seconds", sa.Float(), nullable=False),
         sa.Column("total_invalid_attempts", sa.Integer(), nullable=True),
-        sa.Column("game_metadata", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
         sa.Column("created_at", sa.DateTime(), nullable=True),
         sa.Column("completed_at", sa.DateTime(), nullable=True),
         sa.PrimaryKeyConstraint("id"),
