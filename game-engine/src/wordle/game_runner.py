@@ -423,6 +423,10 @@ class GameRunner:
         if self.game:
             try:
                 current_state = self.game.get_game_state()
+                # Override status to LOST since the game ended in an error
+                current_state["status"] = GameStatus.LOST.value
+                current_state["game_over"] = True
+                current_state["won"] = False
                 game_state = self._convert_game_state_to_pydantic(current_state)
             except Exception:
                 # If we can't get game state, fall back to None

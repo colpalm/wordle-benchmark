@@ -234,7 +234,9 @@ class TestGameRunner:
         assert result.game_state.guesses_made == 1
         assert result.game_state.guesses_remaining == 5
         assert result.game_state.won is False
-        assert result.game_state.game_over is False
+        # Game should be marked as over and lost when an error occurs
+        assert result.game_state.game_over is True
+        assert result.game_state.status.value == "lost"
 
         # Metadata should still be correct
         assert result.metadata.model == "test-model"

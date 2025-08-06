@@ -37,4 +37,6 @@ MODEL_PRICING: dict[str, ModelPricing] = {
     "google/gemini-2.5-flash": ModelPricing(0.30, 2.5),
     "google/gemini-2.5-pro": ModelPricing(1.25, 10.0),
     "meta-llama/llama-3.3-70b-instruct:free": ModelPricing(0.0, 0.0),  # Free tier model for testing
+    "qwen/qwen3-coder:free": ModelPricing(0.0, 0.0),  # Free tier model for testing
+    "moonshotai/kimi-k2:free": ModelPricing(0.0, 0.0),  # Free tier model for testing
 }
