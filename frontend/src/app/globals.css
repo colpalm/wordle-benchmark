@@ -32,6 +32,9 @@
   --color-border: var(--color-border);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --color-wordle-green: #538d4e;
+  --color-wordle-yellow: #b59f3b;
+  --color-wordle-gray: #3a3a3c;
 }
 
 /* Dark Theme Styles */

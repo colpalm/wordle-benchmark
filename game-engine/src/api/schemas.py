@@ -32,9 +32,10 @@ class GameTurn(BaseModel):
         from_attributes = True
 
 
-class GameSummary(BaseModel):
-    """Basic game information for list views."""
+class Game(BaseModel):
+    """Game model with optional relationships."""
 
+    # Core game data (always present)
     id: UUID
     model_name: str
     template_name: str
@@ -49,16 +50,9 @@ class GameSummary(BaseModel):
     created_at: datetime
     completed_at: Optional[datetime]
 
-    class Config:
-        from_attributes = True
-
-
-class GameDetails(GameSummary):
-    """Full game details including turns."""
-
-    turns: list[GameTurn]
-    # Note: Excluding llm_interactions and invalid_attempts for now
-    # to keep the API response simpler. Can add them later if needed.
+    # Optional relationships (populated based on query parameters)
+    turns: Optional[list[GameTurn]] = None
+    # Note: llm_interactions and invalid_attempts can be added later when needed
 
     class Config:
         from_attributes = True

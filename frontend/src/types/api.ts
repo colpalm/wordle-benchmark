@@ -12,23 +12,26 @@ export enum GameStatus {
   LOST = 'lost'
 }
 
-// Basic game info from list endpoint
-export interface GameSummary {
+// Single Game interface with optional relationships
+export interface Game {
+  // Core game data (always present)
   id: string;
   model_name: string;
+  template_name: string;
+  parser_name: string;
   target_word: string;
   date: string;
   status: GameStatus;
   guesses_count: number;
   won: boolean;
   duration_seconds: number;
-}
-
-// Full game details from individual game endpoint
-export interface GameDetails extends GameSummary {
-  turns: GameTurn[];
-  llm_interactions?: LLMInteraction[];
-  invalid_attempts?: InvalidWordAttempt[];
+  total_invalid_attempts: number;
+  created_at: string;
+  completed_at?: string;
+  
+  // Optional relationships (populated based on API parameters)
+  turns?: GameTurn[];
+  // Note: llm_interactions and invalid_attempts can be added when needed
 }
 
 export interface GameTurn {

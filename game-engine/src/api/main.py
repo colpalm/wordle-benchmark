@@ -1,14 +1,13 @@
 """FastAPI application for Wordle Benchmark frontend."""
 
 from datetime import date
-from typing import List, Optional
-from uuid import UUID
+from typing import Optional
 
 import uvicorn
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.schemas import GameDetails, GameSummary
+from api.schemas import Game
 from database.config import ApplicationConfig
 from database.service import GameDatabaseService
 
@@ -35,15 +34,24 @@ def get_db_service() -> GameDatabaseService:
     return GameDatabaseService(config)
 
 
-@app.get("/api/v1/games", response_model=list[GameSummary])
+@app.get("/api/v1/games", response_model=list[Game])
 async def get_games_by_date(
     date_param: Optional[str] = None,
+    include_turns: bool = False,
     db_service: GameDatabaseService = Depends(get_db_service),  # noqa: B008
-) -> List[GameSummary]:
+) -> list[Game]:
     """
     Get all games for a specific date.
-    Returns basic game information without full turn details.
+
+    Args:
+        date_param: Date in YYYY-MM-DD format
+        include_turns: Include turn-by-turn game data (default: False)
+        db_service: Database service instance
+
+    Returns:
+        List of games with optional turn information
     """
+    print(f"DEBUG: date_param={date_param}, include_turns={include_turns} (type: {type(include_turns)})")
     try:
         if date_param:
             game_date = date.fromisoformat(date_param)
@@ -52,26 +60,11 @@ async def get_games_by_date(
             # TODO: Add method to get latest available date
             return []
 
-        games = db_service.get_games_by_date(game_date)
-        return [GameSummary.model_validate(game) for game in games]
+        games = db_service.get_games_by_date(game_date, include_relationships=include_turns)
+        return [Game.model_validate(game) for game in games]
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=f"Invalid date format: {e}") from e
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Database error: {e}") from e
-
-
-@app.get("/api/v1/games/{game_id}", response_model=GameDetails)
-async def get_game_details(game_id: UUID, db_service: GameDatabaseService = Depends(get_db_service)) -> GameDetails:  # noqa: B008
-    """
-    Get full game details including turns, reasoning, and letter results.
-    """
-    try:
-        game = db_service.get_game_by_id(game_id)
-        if not game:
-            raise HTTPException(status_code=404, detail="Game not found")
-        return GameDetails.model_validate(game)
-
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {e}") from e
 

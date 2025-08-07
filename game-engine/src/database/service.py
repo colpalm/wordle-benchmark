@@ -93,6 +93,7 @@ class GameDatabaseService:
                 logger.error(f"Failed to save game result: {e}")
                 raise
 
+    # TODO: Currently not being use - potentially remove
     def get_game_by_id(self, game_id: UUID) -> Optional[Game]:
         """Retrieve a game by its ID with all relationships loaded.
 
@@ -122,20 +123,32 @@ class GameDatabaseService:
                 logger.error(f"Failed to retrieve game {game_id}: {e}")
                 raise
 
-    def get_games_by_date(self, target_date: date) -> List[Game]:
+    def get_games_by_date(self, target_date: date, include_relationships: bool = False) -> List[Game]:
         """Retrieve all games for a specific date.
 
         Args:
             target_date: Date to query
+            include_relationships: Whether to load turns, llm_interactions, and invalid_attempts
 
         Returns:
-            List of Game models
+            List of Game models with optional relationships loaded
         """
         with self.SessionLocal() as session:
             try:
                 stmt = select(Game).where(Game.date == target_date)
+                if include_relationships:
+                    stmt = stmt.options(
+                        selectinload(Game.turns),
+                        selectinload(Game.invalid_attempts),
+                        selectinload(Game.llm_interactions),
+                    )
                 result = session.execute(stmt)
-                return list(result.scalars().all())
+                games = list(result.scalars().all())
+                if include_relationships:
+                    # Detach games so they work outside session
+                    for game in games:
+                        session.expunge(game)
+                return games
             except SQLAlchemyError as e:
                 logger.error(f"Failed to retrieve games for date {target_date}: {e}")
                 raise
