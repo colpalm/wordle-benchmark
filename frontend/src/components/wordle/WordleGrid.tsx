@@ -1,5 +1,6 @@
 import { GameTurn, LetterResult } from '@/types/api';
 import LetterTile from './LetterTile';
+import { useState, useEffect } from 'react';
 
 interface WordleGridProps {
   turns: GameTurn[];
@@ -7,6 +8,16 @@ interface WordleGridProps {
 }
 
 export default function WordleGrid({ turns, maxTurns = 6 }: Readonly<WordleGridProps>) {
+  const [animateIn, setAnimateIn] = useState(false);
+
+  useEffect(() => {
+    if (turns.length > 0) {
+      setAnimateIn(true);
+      const timer = setTimeout(() => setAnimateIn(false), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [turns]);
+
   const renderTurn = (turn: GameTurn) => (
     <div key={turn.turn_number} className="flex gap-1 mb-1">
       {turn.letter_results.map((letterResult: LetterResult) => (
@@ -15,6 +26,7 @@ export default function WordleGrid({ turns, maxTurns = 6 }: Readonly<WordleGridP
           letter={letterResult.letter}
           status={letterResult.status}
           position={letterResult.position}
+          animateIn={animateIn}
         />
       ))}
     </div>
