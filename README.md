@@ -20,8 +20,13 @@ Testing LLM performance with Wordle
    ```bash
    make docker-up
    ```
+   
+4. **Run Wordle Game** - Kick off a sequence of Wordle Games
+```bash
+docker compose exec game-engine uv run python -m wordle.game_runner 
+```
 
-4. **Stop Services:**
+5. **Stop Services:**
    ```bash
    make docker-down   # Stop containers
    make docker-clean  # Stop containers and remove volumes (full reset)

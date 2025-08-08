@@ -1,7 +1,6 @@
 from datetime import datetime
 from typing import Optional
 
-import pytz
 import requests
 
 from utils.logging_config import get_logger
@@ -58,9 +57,8 @@ class WordleGame:
     def _fetch_daily_word(self, date: Optional[str] = None) -> str:
         """Fetch today's Wordle solution from NYT API"""
         if date is None:
-            # Use US/Eastern timezone since that's when NYT Wordle resets (midnight EST)
-            eastern = pytz.timezone('US/Eastern')
-            date = datetime.now(eastern).strftime("%Y-%m-%d")
+            # Use UTC date - assumes games run after Wordle reset (12am EST = 5am UTC)
+            date = datetime.now().strftime("%Y-%m-%d")
             logger.debug(f"Fetching word for today's date: {date}")
 
         url = f"{self.NYT_API_URL}/{date}.json"
