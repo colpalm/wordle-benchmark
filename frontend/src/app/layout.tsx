@@ -29,9 +29,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`} // add dark-theme here to test
       >
         <Navigation />
-        <main className="min-h-screen bg-[var(--color-background)]">
-          {children}
-        </main>
+        <main className="min-h-screen bg-[var(--color-background)]">{children}</main>
       </body>
     </html>
   );

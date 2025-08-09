@@ -2,9 +2,7 @@ export default function AnalyticsPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-[var(--color-text)] mb-4">
-          Analytics
-        </h1>
+        <h1 className="text-3xl font-bold text-[var(--color-text)] mb-4">Analytics</h1>
         <p className="text-[var(--color-text-secondary)] mb-6">
           Deep insights into model performance, trends, and patterns.
         </p>
@@ -13,9 +11,7 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Win Rate Trends */}
         <div className="bg-[var(--color-section-background)] rounded-lg p-6 border border-[var(--color-border)]">
-          <h2 className="text-xl font-semibold text-[var(--color-text)] mb-4">
-            Win Rate Trends
-          </h2>
+          <h2 className="text-xl font-semibold text-[var(--color-text)] mb-4">Win Rate Trends</h2>
           <div className="h-64 bg-white rounded border border-[var(--color-border)] flex items-center justify-center">
             <p className="text-[var(--color-text-secondary)]">📈 Chart placeholder</p>
           </div>
@@ -23,9 +19,7 @@ export default function AnalyticsPage() {
 
         {/* Average Guesses Distribution */}
         <div className="bg-[var(--color-section-background)] rounded-lg p-6 border border-[var(--color-border)]">
-          <h2 className="text-xl font-semibold text-[var(--color-text)] mb-4">
-            Guess Distribution
-          </h2>
+          <h2 className="text-xl font-semibold text-[var(--color-text)] mb-4">Guess Distribution</h2>
           <div className="h-64 bg-white rounded border border-[var(--color-border)] flex items-center justify-center">
             <p className="text-[var(--color-text-secondary)]">📊 Chart placeholder</p>
           </div>
@@ -33,9 +27,7 @@ export default function AnalyticsPage() {
 
         {/* Performance by Word Difficulty */}
         <div className="bg-[var(--color-section-background)] rounded-lg p-6 border border-[var(--color-border)]">
-          <h2 className="text-xl font-semibold text-[var(--color-text)] mb-4">
-            Performance by Word Difficulty
-          </h2>
+          <h2 className="text-xl font-semibold text-[var(--color-text)] mb-4">Performance by Word Difficulty</h2>
           <div className="h-64 bg-white rounded border border-[var(--color-border)] flex items-center justify-center">
             <p className="text-[var(--color-text-secondary)]">🎯 Chart placeholder</p>
           </div>
@@ -43,9 +35,7 @@ export default function AnalyticsPage() {
 
         {/* Response Time Analysis */}
         <div className="bg-[var(--color-section-background)] rounded-lg p-6 border border-[var(--color-border)]">
-          <h2 className="text-xl font-semibold text-[var(--color-text)] mb-4">
-            Response Time Analysis
-          </h2>
+          <h2 className="text-xl font-semibold text-[var(--color-text)] mb-4">Response Time Analysis</h2>
           <div className="h-64 bg-white rounded border border-[var(--color-border)] flex items-center justify-center">
             <p className="text-[var(--color-text-secondary)]">⏱️ Chart placeholder</p>
           </div>

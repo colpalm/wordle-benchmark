@@ -2,14 +2,14 @@
 
 // Enums
 export enum LetterStatus {
-  CORRECT = 'correct',
-  PRESENT = 'present',
-  ABSENT = 'absent'
+  CORRECT = "correct",
+  PRESENT = "present",
+  ABSENT = "absent",
 }
 
 export enum GameStatus {
-  WON = 'won',
-  LOST = 'lost'
+  WON = "won",
+  LOST = "lost",
 }
 
 // Single Game interface with optional relationships
@@ -28,7 +28,7 @@ export interface Game {
   total_invalid_attempts: number;
   created_at: string;
   completed_at?: string;
-  
+
   // Optional relationships (populated based on API parameters)
   turns?: GameTurn[];
   // Note: llm_interactions and invalid_attempts can be added when needed

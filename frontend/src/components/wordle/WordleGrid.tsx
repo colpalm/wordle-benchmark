@@ -1,6 +1,6 @@
-import { GameTurn, LetterResult } from '@/types/api';
-import LetterTile from './LetterTile';
-import { useState, useEffect } from 'react';
+import { GameTurn, LetterResult } from "@/types/api";
+import LetterTile from "./LetterTile";
+import { useState, useEffect } from "react";
 
 interface WordleGridProps {
   turns: GameTurn[];
@@ -35,10 +35,7 @@ export default function WordleGrid({ turns, maxTurns = 6 }: Readonly<WordleGridP
   const renderEmptyTurn = (turnNumber: number) => (
     <div key={`empty-${turnNumber}`} className="flex gap-1 mb-1">
       {Array.from({ length: 5 }, (_, index) => (
-        <div
-          key={index}
-          className="w-14 h-14 border-2 border-gray-300 rounded flex items-center justify-center"
-        />
+        <div key={index} className="w-14 h-14 border-2 border-gray-300 rounded flex items-center justify-center" />
       ))}
     </div>
   );

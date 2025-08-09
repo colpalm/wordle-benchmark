@@ -43,5 +43,13 @@ services:
     volumes:
       - ./game-engine/src:/app/src # For development hot-reloading
 
+  frontend:
+    image: wordle-benchmark/frontend:${VERSION}
+    container_name: wordle-frontend
+    depends_on:
+      - game-engine
+    ports:
+      - "3000:3000"
+
 volumes:
   postgres_data:

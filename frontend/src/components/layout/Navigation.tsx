@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 const navItems = [
-  { href: '/games', label: 'Games' },
-  { href: '/analytics', label: 'Analytics' },
-  { href: '/about', label: 'About' }
+  { href: "/games", label: "Games" },
+  { href: "/analytics", label: "Analytics" },
+  { href: "/about", label: "About" },
 ];
 
 export default function Navigation() {
@@ -19,7 +19,7 @@ export default function Navigation() {
           <Link href="/" className="text-xl font-bold text-[var(--color-text)]">
             Wordle Benchmark
           </Link>
-          
+
           <nav className="flex space-x-6">
             {navItems.map(({ href, label }) => (
               <Link
@@ -27,8 +27,8 @@ export default function Navigation() {
                 href={href}
                 className={`px-3 py-2 rounded-md transition-colors ${
                   pathname === href
-                    ? 'bg-[var(--color-primary)] text-white'
-                    : 'text-[var(--color-text)] hover:bg-[var(--color-section-background)]'
+                    ? "bg-[var(--color-primary)] text-white"
+                    : "text-[var(--color-text)] hover:bg-[var(--color-section-background)]"
                 }`}
               >
                 {label}

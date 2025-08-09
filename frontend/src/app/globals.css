@@ -2,14 +2,14 @@
 
 :root {
   /* Base theme colors */
-  --color-background: #FCFCFC;
-  --color-text: #2A2A2A;
+  --color-background: #fcfcfc;
+  --color-text: #2a2a2a;
   --color-text-secondary: #666;
-  --color-primary: #86A397;
-  --color-secondary: #D9C8B4;
-  --color-accent: #E4B363;
-  --color-section-background: #F5F1E9;
-  --color-border: #E2DDD5;
+  --color-primary: #86a397;
+  --color-secondary: #d9c8b4;
+  --color-accent: #e4b363;
+  --color-section-background: #f5f1e9;
+  --color-border: #e2ddd5;
 
   /* Chart Specific Colors */
   --chart-grid: rgba(0, 0, 0, 0.1);
@@ -40,21 +40,21 @@
 /* Dark Theme Styles */
 .dark-theme {
   --color-background: #222;
-  --color-text: #F0F0F0;
-  --color-text-secondary: #AAA;
-  --color-primary: #9DB8AA;
-  --color-secondary: #E8D7C3;
-  --color-accent: #F1C470;
+  --color-text: #f0f0f0;
+  --color-text-secondary: #aaa;
+  --color-primary: #9db8aa;
+  --color-secondary: #e8d7c3;
+  --color-accent: #f1c470;
   --color-section-background: #333;
   --color-border: #444;
 
   --chart-grid: rgba(255, 255, 255, 0.1);
-  --chart-text: #E0E0E0;
-  --chart-title: #F0F0F0;
-  --chart-ticks: #BBBBBB;
+  --chart-text: #e0e0e0;
+  --chart-title: #f0f0f0;
+  --chart-ticks: #bbbbbb;
   --chart-tooltip-bg: rgba(0, 0, 0, 0.8);
-  --chart-tooltip-title: #FFFFFF;
-  --chart-tooltip-body: #EEEEEE;
+  --chart-tooltip-title: #ffffff;
+  --chart-tooltip-body: #eeeeee;
   --chart-bg-opacity: 0.8;
 }
 
@@ -86,8 +86,18 @@ body {
   opacity: 0;
 }
 
-.tile-animate-in:nth-child(1) { animation-delay: 0ms; }
-.tile-animate-in:nth-child(2) { animation-delay: 100ms; }
-.tile-animate-in:nth-child(3) { animation-delay: 200ms; }
-.tile-animate-in:nth-child(4) { animation-delay: 300ms; }
-.tile-animate-in:nth-child(5) { animation-delay: 400ms; }
+.tile-animate-in:nth-child(1) {
+  animation-delay: 0ms;
+}
+.tile-animate-in:nth-child(2) {
+  animation-delay: 100ms;
+}
+.tile-animate-in:nth-child(3) {
+  animation-delay: 200ms;
+}
+.tile-animate-in:nth-child(4) {
+  animation-delay: 300ms;
+}
+.tile-animate-in:nth-child(5) {
+  animation-delay: 400ms;
+}

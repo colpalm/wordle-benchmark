@@ -52,6 +52,12 @@ build/
 *.egg-info/
 *.egg
 
+# Frontend specific
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/coverage/
+
 # Local environment files
 .env
 .env.*
