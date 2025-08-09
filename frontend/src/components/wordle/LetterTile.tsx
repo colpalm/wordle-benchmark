@@ -39,11 +39,11 @@ export default function LetterTile({ letter, status, position, animateIn = false
         willChange: "auto",
       };
     }
-    
+
     if (animateIn && !finished) {
       return { animationDelay: `${delayMs}ms` };
     }
-    
+
     // Hide tiles initially until animation starts
     return { opacity: 0 };
   };
