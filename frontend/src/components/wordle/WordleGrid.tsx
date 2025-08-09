@@ -12,9 +12,19 @@ export default function WordleGrid({ turns, maxTurns = 6 }: Readonly<WordleGridP
 
   useEffect(() => {
     if (turns.length > 0) {
-      setAnimateIn(true);
-      const timer = setTimeout(() => setAnimateIn(false), 1000);
-      return () => clearTimeout(timer);
+      // Add a small delay before starting the animation to reduce the "flash" effect
+      const startTimer = setTimeout(() => {
+        setAnimateIn(true);
+      }, 25);
+      
+      // Calculate proper end time: start delay + last tile delay + animation duration + buffer
+      // 25ms (start) + 320ms (last tile delay) + 600ms (animation) + 100ms (buffer) = 1045ms
+      const endTimer = setTimeout(() => setAnimateIn(false), 1045);
+      
+      return () => {
+        clearTimeout(startTimer);
+        clearTimeout(endTimer);
+      };
     }
   }, [turns]);
 

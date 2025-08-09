@@ -64,25 +64,26 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Wordle tile flip animation */
-@keyframes flipIn {
+/* Wordle tile flip animation - simplified for Safari compatibility */
+@keyframes tileReveal {
   0% {
-    transform: rotateX(-90deg);
+    transform: scaleY(0);
     opacity: 0;
   }
   50% {
-    transform: rotateX(-45deg);
-    opacity: 0.5;
+    transform: scaleY(0.5);
+    opacity: 0.7;
   }
   100% {
-    transform: rotateX(0deg);
+    transform: scaleY(1);
     opacity: 1;
   }
 }
 
 .tile-animate-in {
-  animation: flipIn 0.6s ease-out forwards;
+  animation: tileReveal 0.6s ease-out forwards;
   transform-origin: center;
+  transform: scaleY(0);
   opacity: 0;
 }
 
@@ -90,14 +91,14 @@ body {
   animation-delay: 0ms;
 }
 .tile-animate-in:nth-child(2) {
-  animation-delay: 100ms;
+  animation-delay: 80ms;
 }
 .tile-animate-in:nth-child(3) {
-  animation-delay: 200ms;
+  animation-delay: 160ms;
 }
 .tile-animate-in:nth-child(4) {
-  animation-delay: 300ms;
+  animation-delay: 240ms;
 }
 .tile-animate-in:nth-child(5) {
-  animation-delay: 400ms;
+  animation-delay: 320ms;
 }
