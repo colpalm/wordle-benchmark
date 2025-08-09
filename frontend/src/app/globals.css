@@ -76,31 +76,17 @@ body {
   }
 }
 
+/* Animation delays are set inline from React for Safari compatibility */
 .tile-animate-in {
   animation: tileReveal 0.6s ease-out forwards;
   transform-origin: center;
-  /* Hint the compositor to avoid Safari repaint/flicker at animation end */
   will-change: transform, opacity;
   backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  transform: translateZ(0) perspective(600px) rotateX(-90deg);
+  transform: perspective(600px) rotateX(-90deg);
   opacity: 0;
 }
 
-/* Ensure row containers create a new stacking context to isolate repaints in Safari */
+/* Minimal containment for layout stability */
 .wordle-row {
-  contain: layout paint;
+  contain: layout;
 }
-
-/* Create separate compositing layers for wrapper/inner to avoid column-wide repaints */
-.tile-wrapper {
-  will-change: transform;
-  contain: paint;
-  transform: translateZ(0);
-}
-.tile-inner {
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-}
-
-/* Per-tile animationDelay is now set inline from React for stability in Safari. */
