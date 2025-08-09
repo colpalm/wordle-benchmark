@@ -34,7 +34,7 @@ export default function LetterTile({ letter, status, position, animateIn = false
     if (finished) {
       return {
         animation: "none",
-        transform: "translateZ(0) rotateX(0deg)",
+        transform: "rotateX(0deg)",
         opacity: 1,
         willChange: "auto",
       };
@@ -44,7 +44,8 @@ export default function LetterTile({ letter, status, position, animateIn = false
       return { animationDelay: `${delayMs}ms` };
     }
     
-    return {};
+    // Hide tiles initially until animation starts
+    return { opacity: 0 };
   };
 
   return (

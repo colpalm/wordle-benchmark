@@ -12,14 +12,8 @@ export default function WordleGrid({ turns, maxTurns = 6 }: Readonly<WordleGridP
 
   useEffect(() => {
     if (turns.length > 0) {
-      // Small delay before starting the animation to reduce flash.
-      const startTimer = setTimeout(() => {
-        setAnimateIn(true);
-      }, 50); // 50 ms delay to reduce flicker when first loading and then animating
-
-      return () => {
-        clearTimeout(startTimer);
-      };
+      // Start animation immediately - tiles are hidden until they animate in
+      setAnimateIn(true);
     }
   }, [turns]);
 
