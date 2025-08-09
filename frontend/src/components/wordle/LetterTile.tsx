@@ -5,6 +5,8 @@ interface LetterTileProps extends LetterResult {
   animateIn?: boolean;
 }
 
+const ANIMATION_DELAY_MS = 100;
+
 export default function LetterTile({ letter, status, position, animateIn = false }: Readonly<LetterTileProps>) {
   const [finished, setFinished] = useState(false);
 
@@ -26,7 +28,24 @@ export default function LetterTile({ letter, status, position, animateIn = false
     setFinished(true);
   }, []);
 
-  const delayMs = position * 80; // match the previous CSS nth-child delays
+  const delayMs = position * ANIMATION_DELAY_MS;
+
+  const getAnimationStyles = () => {
+    if (finished) {
+      return {
+        animation: "none",
+        transform: "translateZ(0) perspective(600px) rotateX(0deg)",
+        opacity: 1,
+        willChange: "auto",
+      };
+    }
+    
+    if (animateIn && !finished) {
+      return { animationDelay: `${delayMs}ms` };
+    }
+    
+    return {};
+  };
 
   return (
     <div className="tile-wrapper w-14 h-14">
@@ -37,17 +56,7 @@ export default function LetterTile({ letter, status, position, animateIn = false
           ${getStatusClasses()}
           ${animateIn && !finished ? "tile-animate-in" : ""}
         `}
-        style={{
-          ...(animateIn && !finished ? { animationDelay: `${delayMs}ms` } : {}),
-          ...(finished
-            ? {
-                animation: "none",
-                transform: "translateZ(0) perspective(600px) rotateX(0deg)",
-                opacity: 1,
-                willChange: "auto",
-              }
-            : {}),
-        }}
+        style={getAnimationStyles()}
         onAnimationEnd={handleAnimationEnd}
         data-position={position}
         aria-label={`Letter ${letter} at position ${position + 1}, status: ${status}`}
