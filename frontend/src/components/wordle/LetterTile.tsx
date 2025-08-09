@@ -34,7 +34,7 @@ export default function LetterTile({ letter, status, position, animateIn = false
     if (finished) {
       return {
         animation: "none",
-        transform: "translateZ(0) perspective(600px) rotateX(0deg)",
+        transform: "translateZ(0) rotateX(0deg)",
         opacity: 1,
         willChange: "auto",
       };

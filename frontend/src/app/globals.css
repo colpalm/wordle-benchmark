@@ -82,7 +82,7 @@ body {
   transform-origin: center;
   will-change: transform, opacity;
   backface-visibility: hidden;
-  transform: perspective(600px) rotateX(-90deg);
+  transform: rotateX(-90deg);
   opacity: 0;
 }
 
