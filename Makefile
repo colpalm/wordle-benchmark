@@ -3,7 +3,9 @@
 
 # Get version from pyproject.toml to use as the default Docker image tag
 VERSION := $(shell grep '^version' game-engine/pyproject.toml | sed 's/version = "\(.*\)"/\1/')
-export VERSION
+
+# Default API URL for frontend builds (can be overridden in higher environments)
+NEXT_PUBLIC_API_URL ?= http://localhost:8000
 
 .PHONY: lint-backend lint-backend-fix lint-frontend lint-frontend-fix \
 		test-backend-fast test-backend-full test-backend \
@@ -15,24 +17,25 @@ export VERSION
 help:
 	@echo "Usage: make [target]"
 	@echo "Targets:"
-	@echo "  lint-backend             Check backend formatting and linting"
-	@echo "  lint-backend-fix         Format and lint backend code (auto-fix)"
-	@echo "  lint-frontend            Check frontend formatting and linting"
-	@echo "  lint-frontend-fix        Format and lint frontend code (auto-fix)"
-	@echo "  test-backend-fast        Run backend tests (no API calls)"
-	@echo "  test-backend-full        Run all backend tests including API calls"
-	@echo "  test-backend             Alias for test-backend-fast"
-	@echo "  docker-build             Build all Docker images"
-	@echo "  docker-build-game-engine Build game-engine docker image"
-	@echo "  docker-build-frontend    Build frontend docker image"
-	@echo "  docker-up                Start all services using Docker Compose"
-	@echo "  docker-down              Stop all services"
-	@echo "  docker-clean             Stop all services and remove volumes"
-	@echo "  docker-frontend-dev-up   Start backend services + local frontend dev"
-	@echo "  docker-frontend-dev-down Stop backend services and frontend dev"
-	@echo "  dev                      Development mode: auto-fix linting for backend and frontend"
-	@echo "  ci                       Full CI pipeline (full build): verify backend, verify frontend, build images"
+	@echo "  lint-backend              Check backend formatting and linting"
+	@echo "  lint-backend-fix          Format and lint backend code (auto-fix)"
+	@echo "  lint-frontend             Check frontend formatting and linting"
+	@echo "  lint-frontend-fix         Format and lint frontend code (auto-fix)"
+	@echo "  test-backend-fast         Run backend tests (no API calls)"
+	@echo "  test-backend-full         Run all backend tests including API calls"
+	@echo "  test-backend              Alias for test-backend-fast"
+	@echo "  docker-build              Build all Docker images"
+	@echo "  docker-build-game-engine  Build game-engine docker image"
+	@echo "  docker-build-frontend     Build frontend docker image"
+	@echo "  docker-up                 Start all services using Docker Compose"
+	@echo "  docker-down               Stop all services"
+	@echo "  docker-clean              Stop all services and remove volumes"
+	@echo "  docker-frontend-dev-up    Start backend services + local frontend dev"
+	@echo "  docker-frontend-dev-down  Stop backend services and frontend dev"
+	@echo "  dev                       Development mode: auto-fix linting for backend and frontend"
+	@echo "  ci                        Full CI pipeline (full build): verify backend, verify frontend, build images"
 
+## Main Builds ##
 # Development mode (auto-fix)
 dev: lint-backend-fix test-backend-fast lint-frontend-fix docker-build
 
@@ -40,7 +43,7 @@ dev: lint-backend-fix test-backend-fast lint-frontend-fix docker-build
 ci: lint-backend test-backend-fast lint-frontend docker-build
 
 
-# Backend targets
+## Backend targets ##
 lint-backend:
 	cd game-engine && uv run ruff format --check .
 	cd game-engine && uv run ruff check .
@@ -57,7 +60,7 @@ test-backend-full:
 
 test-backend: test-backend-fast
 
-# Frontend targets
+## Frontend targets ##
 lint-frontend:
 	cd frontend && npm run format:check
 	cd frontend && npm run lint
@@ -66,7 +69,7 @@ lint-frontend-fix:
 	cd frontend && npm run format
 	cd frontend && npm run lint
 
-# Docker targets
+## Docker targets ##
 
 docker-build: docker-build-game-engine docker-build-frontend
 
@@ -80,7 +83,8 @@ docker-build-frontend:
 	@echo "Syncing dependencies..."
 	cd frontend && npm install --package-lock-only
 	@echo "Building Docker image with tag: wordle-benchmark/frontend:$(VERSION)..."
-	docker build -t wordle-benchmark/frontend:$(VERSION) -f docker/frontend/Dockerfile .
+	docker build --build-arg NEXT_PUBLIC_API_URL=$(NEXT_PUBLIC_API_URL) \
+	  -t wordle-benchmark/frontend:$(VERSION) -f docker/frontend/Dockerfile .
 
 docker-up:
 	@echo "Starting all services..."
