@@ -67,15 +67,11 @@ body {
 /* Wordle tile flip animation - simplified for Safari compatibility */
 @keyframes tileReveal {
   0% {
-    transform: scaleY(0);
+    transform: perspective(600px) rotateX(-90deg);
     opacity: 0;
   }
-  50% {
-    transform: scaleY(0.5);
-    opacity: 0.7;
-  }
   100% {
-    transform: scaleY(1);
+    transform: perspective(600px) rotateX(0deg);
     opacity: 1;
   }
 }
@@ -83,22 +79,28 @@ body {
 .tile-animate-in {
   animation: tileReveal 0.6s ease-out forwards;
   transform-origin: center;
-  transform: scaleY(0);
+  /* Hint the compositor to avoid Safari repaint/flicker at animation end */
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translateZ(0) perspective(600px) rotateX(-90deg);
   opacity: 0;
 }
 
-.tile-animate-in:nth-child(1) {
-  animation-delay: 0ms;
+/* Ensure row containers create a new stacking context to isolate repaints in Safari */
+.wordle-row {
+  contain: layout paint;
 }
-.tile-animate-in:nth-child(2) {
-  animation-delay: 80ms;
+
+/* Create separate compositing layers for wrapper/inner to avoid column-wide repaints */
+.tile-wrapper {
+  will-change: transform;
+  contain: paint;
+  transform: translateZ(0);
 }
-.tile-animate-in:nth-child(3) {
-  animation-delay: 160ms;
+.tile-inner {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
-.tile-animate-in:nth-child(4) {
-  animation-delay: 240ms;
-}
-.tile-animate-in:nth-child(5) {
-  animation-delay: 320ms;
-}
+
+/* Per-tile animationDelay is now set inline from React for stability in Safari. */

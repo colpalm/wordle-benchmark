@@ -12,24 +12,19 @@ export default function WordleGrid({ turns, maxTurns = 6 }: Readonly<WordleGridP
 
   useEffect(() => {
     if (turns.length > 0) {
-      // Add a small delay before starting the animation to reduce the "flash" effect
+      // Small delay before starting the animation to reduce flash.
       const startTimer = setTimeout(() => {
         setAnimateIn(true);
-      }, 25);
-      
-      // Calculate proper end time: start delay + last tile delay + animation duration + buffer
-      // 25ms (start) + 320ms (last tile delay) + 600ms (animation) + 100ms (buffer) = 1045ms
-      const endTimer = setTimeout(() => setAnimateIn(false), 1045);
-      
+      }, 50);
+
       return () => {
         clearTimeout(startTimer);
-        clearTimeout(endTimer);
       };
     }
   }, [turns]);
 
   const renderTurn = (turn: GameTurn) => (
-    <div key={turn.turn_number} className="flex gap-1 mb-1">
+    <div key={turn.turn_number} className="wordle-row flex gap-1 mb-1">
       {turn.letter_results.map((letterResult: LetterResult) => (
         <LetterTile
           key={letterResult.position}
@@ -43,7 +38,7 @@ export default function WordleGrid({ turns, maxTurns = 6 }: Readonly<WordleGridP
   );
 
   const renderEmptyTurn = (turnNumber: number) => (
-    <div key={`empty-${turnNumber}`} className="flex gap-1 mb-1">
+    <div key={`empty-${turnNumber}`} className="wordle-row flex gap-1 mb-1">
       {Array.from({ length: 5 }, (_, index) => (
         <div key={index} className="w-14 h-14 border-2 border-gray-300 rounded flex items-center justify-center" />
       ))}
