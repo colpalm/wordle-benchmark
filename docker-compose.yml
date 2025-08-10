@@ -17,7 +17,7 @@ services:
       retries: 5
 
   game-engine:
-    image: wordle-benchmark/game-engine:${VERSION}
+    image: ghcr.io/colpalm/wordle-benchmark-game-engine:${VERSION}
     container_name: wordle-game-engine
     environment:
       # Required LLM configuration
@@ -44,7 +44,7 @@ services:
       - ./game-engine/src:/app/src # For development hot-reloading
 
   frontend:
-    image: wordle-benchmark/frontend:${VERSION}
+    image: ghcr.io/colpalm/wordle-benchmark-frontend:${VERSION}
     container_name: wordle-frontend
     depends_on:
       - game-engine
