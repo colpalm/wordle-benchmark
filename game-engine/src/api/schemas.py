@@ -47,6 +47,7 @@ class Game(BaseModel):
     won: bool
     duration_seconds: float
     total_invalid_attempts: int
+    golf_score: int
     created_at: datetime
     completed_at: Optional[datetime]
 

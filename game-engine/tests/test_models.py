@@ -208,7 +208,9 @@ class TestGameResult:
             date="2024-01-01",
         )
 
-        result = GameResult(success=True, game_state=game_state, metadata=metadata)
+        golf_score = game_state.guesses_made - 4
+
+        result = GameResult(success=True, game_state=game_state, metadata=metadata, golf_score=golf_score)
 
         assert result.success is True
         assert result.game_state == game_state
@@ -236,7 +238,9 @@ class TestGameResult:
             date="2024-01-01",
         )
 
-        result = GameResult(success=True, game_state=game_state, metadata=metadata)
+        golf_score = game_state.guesses_made - 4
+
+        result = GameResult(success=True, game_state=game_state, metadata=metadata, golf_score=golf_score)
 
         assert result.won is True
         assert result.target_word == "HELLO"
@@ -262,7 +266,9 @@ class TestGameResult:
             date="2024-01-01",
         )
 
-        result = GameResult(success=False, game_state=game_state, metadata=metadata, error="Connection timeout")
+        result = GameResult(
+            success=False, game_state=game_state, metadata=metadata, error="Connection timeout", golf_score=4
+        )
 
         assert result.success is False
         assert result.error == "Connection timeout"
@@ -401,7 +407,9 @@ class TestModelSerialization:
             date="2024-01-01",
         )
 
-        result = GameResult(success=True, game_state=game_state, metadata=metadata)
+        golf_score = game_state.guesses_made - 4
+
+        result = GameResult(success=True, game_state=game_state, metadata=metadata, golf_score=golf_score)
 
         # Test full serialization
         json_data = result.model_dump()

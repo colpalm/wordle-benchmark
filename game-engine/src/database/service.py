@@ -93,7 +93,7 @@ class GameDatabaseService:
                 logger.error(f"Failed to save game result: {e}")
                 raise
 
-    # TODO: Currently not being use - potentially remove
+    # TODO: Currently not being used - potentially remove
     def get_game_by_id(self, game_id: UUID) -> Optional[Game]:
         """Retrieve a game by its ID with all relationships loaded.
 
@@ -194,6 +194,7 @@ class GameDatabaseService:
             won=game_state.won,
             duration_seconds=metadata.duration_seconds,
             total_invalid_attempts=metadata.total_invalid_attempts,
+            golf_score=game_result.golf_score,
             created_at=datetime.now(UTC),
             completed_at=metadata.end_time,
         )

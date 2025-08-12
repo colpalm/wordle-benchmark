@@ -101,7 +101,11 @@ class TestGameDatabaseService:
             total_invalid_attempts=0,
         )
 
-        game_result = GameResult(success=True, game_state=game_state, metadata=metadata, error=None)
+        golf_score = game_state.guesses_made - 4
+
+        game_result = GameResult(
+            success=True, game_state=game_state, metadata=metadata, error=None, golf_score=golf_score
+        )
 
         # Save the game result
         game_id = db_service.save_game_result(game_result)
@@ -151,7 +155,9 @@ class TestGameDatabaseService:
             total_invalid_attempts=2,
         )
 
-        game_result = GameResult(success=True, game_state=game_state, metadata=metadata)
+        golf_score = game_state.guesses_made - 4
+
+        game_result = GameResult(success=True, game_state=game_state, metadata=metadata, golf_score=golf_score)
 
         # Prepare invalid word attempts in consolidated structure
         invalid_word_attempts = [
@@ -201,7 +207,9 @@ class TestGameDatabaseService:
                 date="2024-01-15",
             )
 
-            game_result = GameResult(success=True, game_state=game_state, metadata=metadata)
+            golf_score = game_state.guesses_made - 4
+
+            game_result = GameResult(success=True, game_state=game_state, metadata=metadata, golf_score=golf_score)
 
             db_service.save_game_result(game_result)
 
@@ -240,7 +248,9 @@ class TestGameDatabaseService:
                 date="2024-01-15",
             )
 
-            game_result = GameResult(success=True, game_state=game_state, metadata=metadata)
+            golf_score = game_state.guesses_made - 4
+
+            game_result = GameResult(success=True, game_state=game_state, metadata=metadata, golf_score=golf_score)
 
             db_service.save_game_result(game_result)
 
@@ -281,7 +291,9 @@ class TestGameDatabaseService:
             date="2024-01-15",
         )
 
-        game_result = GameResult(success=True, game_state=game_state, metadata=metadata)
+        golf_score = game_state.guesses_made - 4
+
+        game_result = GameResult(success=True, game_state=game_state, metadata=metadata, golf_score=golf_score)
 
         # Create LLM interactions data
         llm_interactions = [

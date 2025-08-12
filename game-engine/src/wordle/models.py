@@ -24,6 +24,7 @@ class Game(BaseModel):
     won: bool
     duration_seconds: float = Field(ge=0)
     total_invalid_attempts: int = Field(ge=0, default=0)
+    golf_score: int = Field(ge=-3, le=4)  # Won in 1 = -3, lost = +4
     created_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
 
@@ -133,6 +134,7 @@ class GameResult(BaseModel):
     game_state: Optional[GameState] = None
     metadata: GameMetadata
     error: Optional[str] = None
+    golf_score: int = Field(ge=-3, le=4)  # Won in 1 = -3, lost = +4
 
     # Convenience properties
     @property
