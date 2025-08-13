@@ -12,6 +12,12 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 from alembic import op
+from database.schema import (
+    DROP_GAME_USAGE_SUMMARY_VIEW,
+    DROP_LEADERBOARD_STATS_VIEW,
+    GAME_USAGE_SUMMARY_VIEW,
+    LEADERBOARD_STATS_VIEW,
+)
 
 # revision identifiers, used by Alembic.
 revision: str = "27f9b6140e48"
@@ -102,28 +108,16 @@ def upgrade() -> None:
     op.create_index("idx_llm_interactions_game_id", "llm_interactions", ["game_id", "turn_number"])
     op.create_index("idx_invalid_attempts_game_id", "invalid_word_attempts", ["game_id"])
 
-    # Create game usage summary view
-    op.execute("""
-        CREATE VIEW game_usage_summary AS
-        SELECT
-            game_id,
-            SUM(prompt_tokens) as total_tokens_input,
-            SUM(completion_tokens) as total_tokens_output,
-            SUM(reasoning_tokens) as total_tokens_reasoning,
-            SUM(total_tokens) as total_tokens_all,
-            SUM(cost_usd) as total_cost_usd,
-            AVG(response_time_ms) as response_time_avg_ms,
-            COUNT(*) as total_requests
-        FROM llm_interactions
-        WHERE parse_success = true
-        GROUP BY game_id;
-    """)
+    # Create views from shared schema
+    op.execute(GAME_USAGE_SUMMARY_VIEW)
+    op.execute(LEADERBOARD_STATS_VIEW)
 
 
 def downgrade() -> None:
     """Downgrade schema."""
-    # Drop view first
-    op.execute("DROP VIEW IF EXISTS game_usage_summary;")
+    # Drop views first
+    op.execute(DROP_LEADERBOARD_STATS_VIEW)
+    op.execute(DROP_GAME_USAGE_SUMMARY_VIEW)
 
     # Drop indexes
     op.drop_index("idx_invalid_attempts_game_id", table_name="invalid_word_attempts")
