@@ -17,7 +17,7 @@ export default function Navigation() {
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <Link href="/" className="text-xl font-bold text-[var(--color-text)]">
-            Wordle Benchmark
+            Word(le) Benchmark
           </Link>
 
           <nav className="flex space-x-6">

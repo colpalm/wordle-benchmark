@@ -81,7 +81,7 @@ async def get_leaderboard(
     leaderboard_service: LeaderboardService = Depends(get_leaderboard_service),  # noqa: B008
 ) -> LeaderboardResponseDto:
     """
-    Get leaderboard with model performance statistics and recent form.
+    Get leaderboard with model performance statistics and recent results.
 
     Returns:
         Complete leaderboard data with rankings, win rates, and recent game results

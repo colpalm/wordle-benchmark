@@ -154,7 +154,7 @@ class GameResult(BaseModel):
 
 
 class RecentGame(BaseModel):
-    """Recent game result for recent form display."""
+    """Recent game result for recent results display."""
 
     date: str = Field(description="Game date in YYYY-MM-DD format")
     won: bool = Field(description="Whether the game was won or lost")
@@ -171,7 +171,7 @@ class LeaderboardEntry(BaseModel):
     total_golf_score: int = Field(description="Total golf score (lower is better)")
     first_game_date: str = Field(description="Date of first game in YYYY-MM-DD format")
     last_game_date: str = Field(description="Date of most recent game in YYYY-MM-DD format")
-    recent_form: list[RecentGame] = Field(default_factory=list, description="Last 5 games for recent form")
+    recent_results: list[RecentGame] = Field(default_factory=list, description="Last 5 games for recent results")
 
 
 class LeaderboardMetadata(BaseModel):
