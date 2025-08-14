@@ -122,6 +122,22 @@ class GameUsageSummary(Base):
     total_requests: Mapped[int] = mapped_column(Integer)
 
 
+class LeaderboardStats(Base):
+    """Leaderboard statistics view for model performance comparison."""
+
+    __tablename__ = "leaderboard_stats"
+    __table_args__ = {"info": {"is_view": True}}
+
+    model_name: Mapped[str] = mapped_column(String(100), primary_key=True)
+    total_games: Mapped[int] = mapped_column(Integer)
+    wins: Mapped[int] = mapped_column(Integer)
+    win_rate: Mapped[float] = mapped_column(Numeric(5, 1))  # e.g., 86.6
+    avg_guesses: Mapped[Optional[float]] = mapped_column(Numeric(3, 1))  # Only for won games
+    total_golf_score: Mapped[int] = mapped_column(Integer)
+    first_game_date: Mapped[date] = mapped_column(Date)
+    last_game_date: Mapped[date] = mapped_column(Date)
+
+
 # Production optimized indexes
 Index("idx_games_daily_active", Game.model_name, Game.date)
 Index("idx_games_date_status", Game.date, Game.status, Game.won)

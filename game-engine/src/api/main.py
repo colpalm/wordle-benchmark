@@ -7,9 +7,9 @@ import uvicorn
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.schemas import Game
 from database.config import ApplicationConfig
-from database.service import GameDatabaseService
+from database.service import GameDatabaseService, LeaderboardService
+from wordle.dtos import GameDto, LeaderboardResponseDto
 
 # Create FastAPI app
 app = FastAPI(
@@ -34,12 +34,19 @@ def get_db_service() -> GameDatabaseService:
     return GameDatabaseService(config)
 
 
-@app.get("/api/v1/games", response_model=list[Game])
+def get_leaderboard_service(
+    db_service: GameDatabaseService = Depends(get_db_service),  # noqa: B008
+) -> LeaderboardService:
+    """Get a leaderboard service instance."""
+    return LeaderboardService(db_service)
+
+
+@app.get("/api/v1/games", response_model=list[GameDto])
 async def get_games_by_date(
     date_param: Optional[str] = None,
     include_turns: bool = False,
     db_service: GameDatabaseService = Depends(get_db_service),  # noqa: B008
-) -> list[Game]:
+) -> list[GameDto]:
     """
     Get all games for a specific date.
 
@@ -51,7 +58,7 @@ async def get_games_by_date(
     Returns:
         List of games with optional turn information
     """
-    print(f"DEBUG: date_param={date_param}, include_turns={include_turns} (type: {type(include_turns)})")
+
     try:
         if date_param:
             game_date = date.fromisoformat(date_param)
@@ -61,12 +68,28 @@ async def get_games_by_date(
             return []
 
         games = db_service.get_games_by_date(game_date, include_relationships=include_turns)
-        return [Game.model_validate(game) for game in games]
+        return games
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=f"Invalid date format: {e}") from e
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {e}") from e
+
+
+@app.get("/api/v1/leaderboard", response_model=LeaderboardResponseDto)
+async def get_leaderboard(
+    leaderboard_service: LeaderboardService = Depends(get_leaderboard_service),  # noqa: B008
+) -> LeaderboardResponseDto:
+    """
+    Get leaderboard with model performance statistics and recent form.
+
+    Returns:
+        Complete leaderboard data with rankings, win rates, and recent game results
+    """
+    try:
+        return leaderboard_service.get_leaderboard_data()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve leaderboard: {e}") from e
 
 
 @app.get("/health")
