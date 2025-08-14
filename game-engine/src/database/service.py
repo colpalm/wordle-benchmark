@@ -163,7 +163,6 @@ class GameDatabaseService:
                 noload(GameModel.llm_interactions),
             )
 
-
     def get_games_by_model(self, model_name: str, limit: Optional[int] = None) -> List[GameDto]:
         """Retrieve games by model name.
 
@@ -241,7 +240,7 @@ class GameDatabaseService:
 
             turn = GameTurnModel(
                 game_id=game_id,
-                turn_number=turn_index + 1, # Convert to 1-based for database
+                turn_number=turn_index + 1,  # Convert to 1-based for database
                 guess=guess,
                 reasoning=reasoning,
                 is_correct=is_correct,
@@ -325,7 +324,7 @@ class LeaderboardService:
                 raise
 
     def get_recent_games_by_model(self, limit: int = 5) -> Dict[str, List[RecentGameDto]]:
-        """Get recent games for each model for recent form display.
+        """Get recent games for each model for recent results display.
 
         Args:
             limit: Number of recent games per model to retrieve
@@ -380,7 +379,7 @@ class LeaderboardService:
         """Get complete leaderboard data including stats and recent games.
 
         Args:
-            recent_games_limit: Number of recent games per model for recent form
+            recent_games_limit: Number of recent games per model for recent results
 
         Returns:
             LeaderboardResponseDto with complete leaderboard data
@@ -407,7 +406,7 @@ class LeaderboardService:
                     total_golf_score=stats.total_golf_score,
                     first_game_date=stats.first_game_date,
                     last_game_date=stats.last_game_date,
-                    recent_form=recent_games_by_model.get(stats.model_name, []),
+                    recent_results=recent_games_by_model.get(stats.model_name, []),
                 )
                 leaderboard_entries.append(entry)
 

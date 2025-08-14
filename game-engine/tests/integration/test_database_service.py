@@ -437,7 +437,7 @@ class TestLeaderboardService:
         assert model_stats.total_golf_score == 8  # Expected: -1 + 0 + 1 + 4 + 4 = 8
         assert model_stats.first_game_date == date(2024, 1, 15)
         assert model_stats.last_game_date == date(2024, 1, 15)
-        assert len(model_stats.recent_form) == len(games)  # All 5 games
+        assert len(model_stats.recent_results) == len(games)  # All 5 games
 
     def test_leaderboard_with_multiple_models(self, db_service, leaderboard_service):
         """Test leaderboard with multiple models competing."""
