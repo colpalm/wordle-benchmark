@@ -1,4 +1,6 @@
-import { Game, ApiError } from "@/types/api";
+import { Game } from "@/types/game";
+import { ApiError } from "@/types/common";
+import { LeaderboardResponse } from "@/types/leaderboard";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -29,6 +31,10 @@ class ApiClient {
 
   async healthCheck(): Promise<{ status: string }> {
     return this.fetchJson<{ status: string }>("/health");
+  }
+
+  async getLeaderboard(): Promise<LeaderboardResponse> {
+    return this.fetchJson<LeaderboardResponse>("/api/v1/leaderboard");
   }
 }
 
