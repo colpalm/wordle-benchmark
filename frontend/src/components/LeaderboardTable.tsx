@@ -55,15 +55,15 @@ const getColorClass = (value: number, thresholds: ColorThreshold[]): string => {
 };
 
 const winRateThresholds: ColorThreshold[] = [
-  { condition: (rate) => rate >= 80, colorClass: "text-green-600" },
-  { condition: (rate) => rate >= 65, colorClass: "text-yellow-600" },
-  { condition: () => true, colorClass: "text-gray-500" } // fallback
+  { condition: rate => rate >= 80, colorClass: "text-green-600" },
+  { condition: rate => rate >= 65, colorClass: "text-yellow-600" },
+  { condition: () => true, colorClass: "text-gray-500" }, // fallback
 ];
 
 const golfScoreThresholds: ColorThreshold[] = [
-  { condition: (score) => score < 0, colorClass: "text-green-600" },
-  { condition: (score) => score > 0, colorClass: "text-red-600" },
-  { condition: () => true, colorClass: "text-[var(--color-text)]" } // fallback for 0
+  { condition: score => score < 0, colorClass: "text-green-600" },
+  { condition: score => score > 0, colorClass: "text-red-600" },
+  { condition: () => true, colorClass: "text-[var(--color-text)]" }, // fallback for 0
 ];
 
 const getSortIcon = (column: SortColumn, sortConfig: SortConfig): string => {

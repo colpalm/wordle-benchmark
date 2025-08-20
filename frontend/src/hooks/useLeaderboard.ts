@@ -65,11 +65,11 @@ export function useLeaderboard(): UseLeaderboardResult {
           bVal = b.total_golf_score;
           break;
         case "recent_results": {
-            const aWins = a.recent_results.filter(game => game.won).length;
-            const bWins = b.recent_results.filter(game => game.won).length;
-            aVal = aWins / Math.max(a.recent_results.length, 1);
-            bVal = bWins / Math.max(b.recent_results.length, 1);
-            break;
+          const aWins = a.recent_results.filter(game => game.won).length;
+          const bWins = b.recent_results.filter(game => game.won).length;
+          aVal = aWins / Math.max(a.recent_results.length, 1);
+          bVal = bWins / Math.max(b.recent_results.length, 1);
+          break;
         }
         default:
           return 0;

@@ -180,6 +180,7 @@ scripts/valid-word-list-generation/wl.txt
 
 # AI Tools
 .junie/
+.claude/
 CLAUDE.md
 
 # Planning

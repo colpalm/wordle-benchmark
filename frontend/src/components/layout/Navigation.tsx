@@ -21,9 +21,9 @@ export default function Navigation() {
             <div className="flex space-x-1">
               <div
                 className="w-5 h-5 rounded border-2 flex items-center justify-center text-white font-bold text-xs tile-flip"
-                style={{ 
-                  backgroundColor: "var(--color-wordle-green)", 
-                  borderColor: "var(--color-wordle-green)" 
+                style={{
+                  backgroundColor: "var(--color-wordle-green)",
+                  borderColor: "var(--color-wordle-green)",
                 }}
                 title="Correct letter"
               >
@@ -31,9 +31,9 @@ export default function Navigation() {
               </div>
               <div
                 className="w-5 h-5 rounded border-2 flex items-center justify-center text-white font-bold text-xs tile-flip"
-                style={{ 
-                  backgroundColor: "var(--color-wordle-yellow)", 
-                  borderColor: "var(--color-wordle-yellow)" 
+                style={{
+                  backgroundColor: "var(--color-wordle-yellow)",
+                  borderColor: "var(--color-wordle-yellow)",
                 }}
                 title="Letter in word, wrong position"
               >
