@@ -24,6 +24,7 @@ class Game(BaseModel):
     won: bool
     duration_seconds: float = Field(ge=0)
     total_invalid_attempts: int = Field(ge=0, default=0)
+    golf_score: int = Field(ge=-3, le=4)  # Golf Score: Won in 1 = -3, lost = +4
     created_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
 
@@ -133,6 +134,7 @@ class GameResult(BaseModel):
     game_state: Optional[GameState] = None
     metadata: GameMetadata
     error: Optional[str] = None
+    golf_score: int = Field(ge=-3, le=4)  # Golf Score: Won in 1 = -3, lost = +4
 
     # Convenience properties
     @property
@@ -146,3 +148,42 @@ class GameResult(BaseModel):
     @property
     def guesses_made(self) -> int:
         return self.game_state.guesses_made if self.game_state else 0
+
+
+## Aggregate / View Models ##
+
+
+class RecentGame(BaseModel):
+    """Recent game result for recent results display."""
+
+    date: str = Field(description="Game date in YYYY-MM-DD format")
+    won: bool = Field(description="Whether the game was won or lost")
+
+
+class LeaderboardEntry(BaseModel):
+    """Single model entry in the leaderboard."""
+
+    model_name: str = Field(description="LLM model identifier")
+    total_games: int = Field(ge=0, description="Total number of games played")
+    wins: int = Field(ge=0, description="Total number of games won")
+    win_rate: float = Field(ge=0.0, le=100.0, description="Win percentage (0-100)")
+    avg_guesses: Optional[float] = Field(ge=1.0, le=6.0, description="Average guesses for won games only")
+    total_golf_score: int = Field(description="Total golf score (lower is better)")
+    first_game_date: str = Field(description="Date of first game in YYYY-MM-DD format")
+    last_game_date: str = Field(description="Date of most recent game in YYYY-MM-DD format")
+    recent_results: list[RecentGame] = Field(default_factory=list, description="Last 5 games for recent results")
+
+
+class LeaderboardMetadata(BaseModel):
+    """Metadata for the leaderboard response."""
+
+    total_games: int = Field(ge=0, description="Total games across all models")
+    total_models: int = Field(ge=0, description="Number of models in leaderboard")
+    last_updated: str = Field(description="Timestamp when data was last updated (ISO format)")
+
+
+class LeaderboardResponse(BaseModel):
+    """Complete leaderboard API response."""
+
+    leaderboard: list[LeaderboardEntry] = Field(description="List of model performance entries")
+    metadata: LeaderboardMetadata = Field(description="Response metadata")

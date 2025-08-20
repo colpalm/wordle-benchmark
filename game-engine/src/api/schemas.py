@@ -4,7 +4,7 @@ from datetime import date, datetime
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from wordle.enums import LetterStatus
 
@@ -28,8 +28,7 @@ class GameTurn(BaseModel):
     letter_results: list[dict]  # Keep as dict for now, matches database JSONB
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class Game(BaseModel):
@@ -47,6 +46,7 @@ class Game(BaseModel):
     won: bool
     duration_seconds: float
     total_invalid_attempts: int
+    golf_score: int
     created_at: datetime
     completed_at: Optional[datetime]
 
@@ -54,5 +54,4 @@ class Game(BaseModel):
     turns: Optional[list[GameTurn]] = None
     # Note: llm_interactions and invalid_attempts can be added later when needed
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

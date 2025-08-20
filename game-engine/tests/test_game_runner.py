@@ -95,6 +95,7 @@ class TestGameRunner:
         assert result.game_state.won is True
         assert result.game_state.guesses == ["STARE", "CRANE"]
         assert len(result.game_state.guess_reasoning) == 2
+        assert result.golf_score == result.game_state.guesses_made - 4  # Won in 2 guesses: 2 - 4 = -2
 
     def test_complete_losing_game(self, game_runner, llm_client):
         """
@@ -122,6 +123,7 @@ class TestGameRunner:
         assert result.game_state.guesses_remaining == 0
         assert result.game_state.target_word == "CRANE"
         assert result.game_state.guesses == ["STARE", "LIGHT", "MOUND", "FIFTY", "BUMPS", "GHOST"]
+        assert result.golf_score == 4  # Lost game = +4 penalty
         assert len(result.game_state.guess_reasoning) == 6
         assert result.success is True
 
@@ -198,6 +200,7 @@ class TestGameRunner:
         assert result.error == "Something went wrong"
         assert result.metadata.model == "test-model"
         assert result.metadata.template == "json"
+        assert result.golf_score == 4  # Error treated as lost game = +4
         assert result.metadata.parser == "json"
         assert result.metadata.duration_seconds == pytest.approx(15.0)
 

@@ -1,13 +1,22 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Game } from "@/types/api";
+import { Game } from "@/types/game";
 import { apiClient } from "@/lib/api";
 import WordleGrid from "@/components/wordle/WordleGrid";
 
 export default function GamesPage() {
+  // Get today's date in YYYY-MM-DD format (user's local timezone)
+  const getTodayDate = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
   const [games, setGames] = useState<Game[]>([]);
-  const [selectedDate, setSelectedDate] = useState<string>("");
+  const [selectedDate, setSelectedDate] = useState<string>(getTodayDate());
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,13 +35,13 @@ export default function GamesPage() {
   };
 
   useEffect(() => {
-    loadGames();
-  }, []);
+    void loadGames(selectedDate);
+  }, [selectedDate]);
 
   const handleDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newDate = event.target.value;
     setSelectedDate(newDate);
-    loadGames(newDate);
+    // useEffect will automatically call loadGames when selectedDate changes
   };
 
   return (

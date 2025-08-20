@@ -1,6 +1,5 @@
-// API Response Types
+// Game-related types and enums
 
-// Enums
 export enum LetterStatus {
   CORRECT = "correct",
   PRESENT = "present",
@@ -63,10 +62,4 @@ export interface InvalidWordAttempt {
   turn_number: number;
   attempted_word: string;
   reason: string;
-}
-
-// API Error Response
-export interface ApiError {
-  detail: string;
-  status_code: number;
 }

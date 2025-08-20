@@ -351,6 +351,9 @@ class GameRunner:
         # Convert dictionary game state to Pydantic GameState
         game_state = self._convert_game_state_to_pydantic(game_state_dict)
 
+        # Calculate golf score (4 is par): won games = guesses - 4, lost games = +4
+        golf_score = game_state_dict["guesses_made"] - 4 if game_state_dict["won"] else 4
+
         # Create metadata
         metadata = GameMetadata(
             model=self.llm_client.get_model_name(),
@@ -366,7 +369,7 @@ class GameRunner:
         # Log final summary
         self._log_game_summary(game_state_dict, duration)
 
-        result = GameResult(success=True, game_state=game_state, metadata=metadata)
+        result = GameResult(success=True, game_state=game_state, metadata=metadata, golf_score=golf_score)
 
         # Save to database if service is provided
         if self.db_service:
@@ -420,6 +423,7 @@ class GameRunner:
 
         # Try to get partial game state if available
         game_state = None
+        golf_score = 4  # Default to +4 (lost game penalty) for errors
         if self.game:
             try:
                 current_state = self.game.get_game_state()
@@ -449,6 +453,7 @@ class GameRunner:
             game_state=game_state,  # Partial state when available or else None
             metadata=metadata,
             error=error_message,
+            golf_score=golf_score,
         )
 
         # Save to database if service is provided

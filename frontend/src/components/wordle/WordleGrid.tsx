@@ -1,4 +1,4 @@
-import { GameTurn, LetterResult } from "@/types/api";
+import { GameTurn, LetterResult } from "@/types/game";
 import LetterTile from "./LetterTile";
 import { useState, useEffect } from "react";
 

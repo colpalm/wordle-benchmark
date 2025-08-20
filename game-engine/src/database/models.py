@@ -34,6 +34,7 @@ class Game(Base):
     won: Mapped[bool] = mapped_column(Boolean)
     duration_seconds: Mapped[float] = mapped_column(Float)
     total_invalid_attempts: Mapped[int] = mapped_column(Integer, default=0)
+    golf_score: Mapped[int] = mapped_column(Integer)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
 
@@ -119,6 +120,22 @@ class GameUsageSummary(Base):
     total_cost_usd: Mapped[Optional[float]] = mapped_column(Numeric(10, 6))
     response_time_avg_ms: Mapped[Optional[float]] = mapped_column(Float)
     total_requests: Mapped[int] = mapped_column(Integer)
+
+
+class LeaderboardStats(Base):
+    """Leaderboard statistics view for model performance comparison."""
+
+    __tablename__ = "leaderboard_stats"
+    __table_args__ = {"info": {"is_view": True}}
+
+    model_name: Mapped[str] = mapped_column(String(100), primary_key=True)
+    total_games: Mapped[int] = mapped_column(Integer)
+    wins: Mapped[int] = mapped_column(Integer)
+    win_rate: Mapped[float] = mapped_column(Numeric(5, 1))  # e.g., 86.6
+    avg_guesses: Mapped[Optional[float]] = mapped_column(Numeric(3, 1))  # Only for won games
+    total_golf_score: Mapped[int] = mapped_column(Integer)
+    first_game_date: Mapped[date] = mapped_column(Date)
+    last_game_date: Mapped[date] = mapped_column(Date)
 
 
 # Production optimized indexes

@@ -1,4 +1,4 @@
-import { LetterResult, LetterStatus } from "@/types/api";
+import { LetterResult, LetterStatus } from "@/types/game";
 import React, { useState, useCallback } from "react";
 
 interface LetterTileProps extends LetterResult {
@@ -17,7 +17,7 @@ export default function LetterTile({ letter, status, position, animateIn = false
       case LetterStatus.PRESENT:
         return "bg-wordle-yellow text-white border-wordle-yellow";
       case LetterStatus.ABSENT:
-        return "bg-gray-600 text-white border-gray-600";
+        return "bg-neutral-600 text-white border-neutral-600";
       default:
         return "bg-white text-black border-gray-300";
     }
